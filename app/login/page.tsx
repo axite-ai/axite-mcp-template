@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useSearchParams } from "next/navigation";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -9,12 +8,6 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
-  const searchParams = useSearchParams();
-
-  // Capture all OAuth params to preserve them after login
-  const callbackUrl = searchParams?.toString()
-    ? `/api/auth/mcp/authorize?${searchParams.toString()}`
-    : "/";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,8 +25,8 @@ export default function LoginPage() {
         body: JSON.stringify({
           email,
           password,
-          callbackURL: callbackUrl,
         }),
+        credentials: "include", // Important: include cookies
       });
 
       const data = await response.json();
@@ -42,8 +35,6 @@ export default function LoginPage() {
         throw new Error(data.error || `${showSignup ? "Signup" : "Login"} failed`);
       }
 
-      // Redirect to the OAuth authorization endpoint with all params preserved
-      window.location.href = callbackUrl;
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
       setLoading(false);
