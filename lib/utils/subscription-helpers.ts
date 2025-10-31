@@ -22,10 +22,10 @@ export async function getUserSubscription(userId: string) {
     // Query for active subscriptions for this user
     const result = await client.query(
       `SELECT * FROM subscription
-       WHERE "referenceId" = $1
-       AND status IN ('active', 'trialing')
-       ORDER BY "createdAt" DESC
-       LIMIT 1`,
+      WHERE "referenceId" = $1
+      AND status IN ('active', 'trialing')
+      ORDER BY "periodStart" DESC
+      LIMIT 1`,
       [userId]
     );
 

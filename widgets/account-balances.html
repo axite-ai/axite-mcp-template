@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Account Balances</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .account-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .account {
+      padding: 16px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+    }
+    .account-name {
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .account-type {
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 8px;
+    }
+    .balances {
+      display: flex;
+      gap: 16px;
+    }
+    .balance-item {
+      flex: 1;
+    }
+    .balance-label {
+      font-size: 11px;
+      color: #9ca3af;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .balance-amount {
+      font-weight: 600;
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script>
+    function formatCurrency(amount, currency = 'USD') {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: currency
+      }).format(amount);
+    }
+
+    function renderAccounts() {
+      const toolOutput = window.openai?.toolOutput;
+
+      if (!toolOutput || !toolOutput.accounts) {
+        document.getElementById('root').innerHTML = '<p>No accounts available</p>';
+        return;
+      }
+
+      const accounts = toolOutput.accounts || [];
+
+      const html = `
+        <div class="account-list">
+          ${accounts.map(account => `
+            <div class="account">
+              <div class="account-name">${account.name}</div>
+              <div class="account-type">${account.type} • ${account.mask ? `****${account.mask}` : ''}</div>
+              <div class="balances">
+                ${account.balances.current !== null ? `
+                  <div class="balance-item">
+                    <div class="balance-label">Current</div>
+                    <div class="balance-amount">${formatCurrency(account.balances.current, account.balances.iso_currency_code)}</div>
+                  </div>
+                ` : ''}
+                ${account.balances.available !== null ? `
+                  <div class="balance-item">
+                    <div class="balance-label">Available</div>
+                    <div class="balance-amount">${formatCurrency(account.balances.available, account.balances.iso_currency_code)}</div>
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+
+      document.getElementById('root').innerHTML = html;
+    }
+
+    // Initial render
+    renderAccounts();
+
+    // Listen for updates
+    window.addEventListener('openai:set_globals', () => {
+      renderAccounts();
+    });
+  </script>
+</body>
+</html>

@@ -18,8 +18,28 @@ import { withMcpAuth } from "better-auth/plugins";
 
 console.log("Auth API methods at startup:", Object.keys(auth.api));
 
-const handler = withMcpAuth(auth, (req, session) => {
+const handler = withMcpAuth(auth, async (req, session) => {
   console.log("MCP session object:", session);
+
+  // Log the request details
+  const url = new URL(req.url);
+  console.log("MCP Request:", {
+    method: req.method,
+    path: url.pathname,
+    searchParams: Object.fromEntries(url.searchParams),
+  });
+
+  // Clone request to read body without consuming it
+  const clonedReq = req.clone();
+  try {
+    const body = await clonedReq.text();
+    if (body) {
+      console.log("MCP Request Body:", body.substring(0, 500));
+    }
+  } catch (e) {
+    // Ignore if body can't be read
+  }
+
   return createMcpHandler(async (server) => {
     // ============================================================================
     // AUTHENTICATED PLAID TOOLS
@@ -37,8 +57,6 @@ const handler = withMcpAuth(auth, (req, session) => {
         _meta: {
           "openai/toolInvocation/invoking": "Fetching your account balances",
           "openai/toolInvocation/invoked": "Retrieved account balances",
-          "openai/widgetAccessible": false,
-          "openai/resultCanProduceWidget": true,
         },
         annotations: {
           destructiveHint: false,
@@ -314,12 +332,6 @@ const handler = withMcpAuth(auth, (req, session) => {
       title: "Check Account Health",
       description: "Get account health information including balances, warnings, and status. Requires authentication.",
       inputSchema: {},
-      _meta: {
-        "openai/outputTemplate": "ui://widget/account-health.html",
-        "openai/toolInvocation/invoking": "Checking account health...",
-        "openai/toolInvocation/invoked": "Health check complete",
-        "openai/widgetAccessible": false,
-      },
       annotations: {
         destructiveHint: false,
         openWorldHint: false,
@@ -336,7 +348,21 @@ const handler = withMcpAuth(auth, (req, session) => {
         // Check 2: Active Subscription
         const hasSubscription = await hasActiveSubscription(session.userId);
         if (!hasSubscription) {
-          return createSubscriptionRequiredResponse("account health check");
+          return {
+            content: [
+              {
+                type: "text",
+                text: "To access account health check, please subscribe to a plan.",
+              },
+            ],
+            structuredContent: {
+              overall_health: 'error',
+              error_message: 'Subscription required'
+            },
+            _meta: {
+              "openai/outputTemplate": "ui://widget/pricing.html",
+            },
+          };
         }
 
         // Check 3: Plaid Connection
@@ -383,6 +409,9 @@ const handler = withMcpAuth(auth, (req, session) => {
             },
           ],
           structuredContent: output,
+          _meta: {
+            "openai/outputTemplate": "ui://widget/account-health.html",
+          },
         };
       } catch (error) {
         console.error("[Tool] check_account_health error", { error });
@@ -399,6 +428,88 @@ const handler = withMcpAuth(auth, (req, session) => {
     }
   );
 
+    // ============================================================================
+    // TEST WIDGET
+    // ============================================================================
+    server.registerTool(
+      "test_widget",
+      {
+        title: "Test Widget",
+        description: "A simple widget to test basic functionality.",
+        inputSchema: {},
+        _meta: {
+          "openai/outputTemplate": "ui://widget/test-widget.html",
+        },
+        securitySchemes: [{ type: "noauth" }],
+      } as any,
+      async (args, context) => {
+        return {
+          content: [
+            {
+              type: "text",
+              text: "Hello from the test widget!",
+            },
+          ],
+          structuredContent: {
+            message: "Hello from the test widget!",
+          },
+        };
+      }
+    );
+
+    // ============================================================================
+    // ADVANCED TEST WIDGET
+    // ============================================================================
+    server.registerTool(
+      "advanced_test_widget",
+      {
+        title: "Advanced Test Widget",
+        description: "A more complex widget to test state and tool calls.",
+        inputSchema: {},
+        _meta: {
+          "openai/outputTemplate": "ui://widget/advanced-test-widget.html",
+        },
+        securitySchemes: [{ type: "noauth" }],
+      } as any,
+      async (args, context) => {
+        return {
+          content: [
+            {
+              type: "text",
+              text: "Advanced test widget loaded.",
+            },
+          ],
+          structuredContent: {
+            message: "Initial message",
+          },
+        };
+      }
+    );
+
+    server.registerTool(
+      "test_widget_action",
+      {
+        title: "Test Widget Action",
+        description: "A simple action that can be called from the advanced test widget.",
+        inputSchema: {
+          current_count: z.number(),
+        },
+        securitySchemes: [{ type: "noauth" }],
+      } as any,
+      async ({ current_count }, context) => {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `The count is ${current_count}.`,
+            },
+          ],
+          structuredContent: {
+            message: `The count from the tool call is ${current_count}.`,
+          },
+        };
+      }
+    );
   // ============================================================================
   // FREE TIER TOOLS (No Authentication Required)
   // ============================================================================
@@ -672,12 +783,12 @@ const handler = withMcpAuth(auth, (req, session) => {
           {
             type: "text",
             text:
-              `Budget breakdown for $${monthlyIncome.toFixed(2)}/month:\n\n` +
-              `💰 Needs: $${needs.toFixed(2)} (${needsPercent}%)\n` +
-              `🎯 Wants: $${wants.toFixed(2)} (${wantsPercent}%)\n` +
-              `📈 Savings: $${savings.toFixed(2)} (${savingsPercent}%)\n` +
-              (hasDebts ? `💳 Debt Payment: $${debt.toFixed(2)} (${debtPercent}%)\n` : "") +
-              `\n${recommendations.join("\n")}`,
+            `Budget breakdown for $${monthlyIncome.toFixed(2)}/month:\n\n` +
+            `💰 Needs: $${needs.toFixed(2)} (${needsPercent}%)\n` +
+            `🎯 Wants: $${wants.toFixed(2)} (${wantsPercent}%)\n` +
+            `📈 Savings: $${savings.toFixed(2)} (${savingsPercent}%)\n` +
+            (hasDebts ? `💳 Debt Payment: $${debt.toFixed(2)} (${debtPercent}%)\n` : "") +
+            `\n${recommendations.join("\n")}`,
           },
         ],
         structuredContent: output,
@@ -690,7 +801,41 @@ const handler = withMcpAuth(auth, (req, session) => {
       };
     }
   );
-  })(req);
+
+  // ============================================================================
+  // WIDGET RESOURCES
+  // ============================================================================
+  const fs = await import('fs/promises');
+  const path = await import('path');
+
+  const registerWidget = (fileName: string, name: string) => {
+    const uri = `ui://widget/${fileName}`;
+    server.registerResource(fileName, uri, { name, mimeType: "text/html" }, async () => {
+      const filePath = path.join(process.cwd(), 'widgets', fileName);
+      try {
+        const content = await fs.readFile(filePath, 'utf-8');
+        return {
+          contents: [{
+            uri,
+            mimeType: "text/html",
+            text: content,
+          }],
+        };
+      } catch (error) {
+        console.error(`Failed to read widget file ${fileName}:`, error);
+        throw new Error(`Widget not found: ${fileName}`);
+      }
+    });
+  };
+
+  registerWidget("advanced-test-widget.html", "Advanced Test Widget");
+  registerWidget("test-widget.html", "Test Widget");
+  registerWidget("account-balances.html", "Account Balances Widget");
+  registerWidget("transactions.html", "Transactions Widget");
+  registerWidget("spending-insights.html", "Spending Insights Widget");
+  registerWidget("account-health.html", "Account Health Widget");
+  registerWidget("pricing.html", "Pricing Widget");
+})(req);
 });
 
 export { handler as GET, handler as POST };

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transactions</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .transaction-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .transaction {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+    }
+    .transaction-info {
+      flex: 1;
+    }
+    .transaction-name {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .transaction-date {
+      font-size: 12px;
+      color: #6b7280;
+    }
+    .transaction-amount {
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .amount-positive {
+      color: #10b981;
+    }
+    .amount-negative {
+      color: #ef4444;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script>
+    function formatCurrency(amount, currency = 'USD') {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: currency
+      }).format(Math.abs(amount));
+    }
+
+    function formatDate(dateString) {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
+    }
+
+    function renderTransactions() {
+      const toolOutput = window.openai?.toolOutput;
+
+      if (!toolOutput || !toolOutput.transactions) {
+        document.getElementById('root').innerHTML = '<p>No transactions available</p>';
+        return;
+      }
+
+      const transactions = toolOutput.transactions || [];
+
+      const html = `
+        <div class="transaction-list">
+          ${transactions.map(tx => `
+            <div class="transaction">
+              <div class="transaction-info">
+                <div class="transaction-name">${tx.name || 'Unknown'}</div>
+                <div class="transaction-date">${formatDate(tx.date)}</div>
+              </div>
+              <div class="transaction-amount ${tx.amount < 0 ? 'amount-negative' : 'amount-positive'}">
+                ${tx.amount < 0 ? '-' : '+'}${formatCurrency(tx.amount, tx.iso_currency_code)}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+
+      document.getElementById('root').innerHTML = html;
+    }
+
+    // Initial render
+    renderTransactions();
+
+    // Listen for updates
+    window.addEventListener('openai:set_globals', () => {
+      renderTransactions();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Advanced Test Widget</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .widget-container {
+      padding: 16px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+    }
+    .dark {
+      background-color: #1f2937;
+      color: #f3f4f6;
+    }
+    button {
+      background-color: #2563eb;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    button:hover {
+      background-color: #1d4ed8;
+    }
+    button:disabled {
+      background-color: #9ca3af;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useSyncExternalStore, useCallback } = React;
+
+    // Hook to get a global property from the openai object
+    function useOpenAiGlobal(key) {
+      return useSyncExternalStore(
+        (onChange) => {
+          const handler = (event) => {
+            if (event.detail.globals[key] !== undefined) {
+              onChange();
+            }
+          };
+          window.addEventListener('openai:set_globals', handler);
+          return () => window.removeEventListener('openai:set_globals', handler);
+        },
+        () => window.openai?.[key]
+      );
+    }
+
+    // Hook for widget state
+    function useWidgetState(defaultState) {
+      const widgetStateFromWindow = useOpenAiGlobal("widgetState");
+      const [widgetState, _setWidgetState] = useState(() => {
+        return widgetStateFromWindow ?? defaultState;
+      });
+
+      useEffect(() => {
+        if (widgetStateFromWindow !== undefined) {
+          _setWidgetState(widgetStateFromWindow);
+        }
+      }, [widgetStateFromWindow]);
+
+      const setWidgetState = useCallback((newState) => {
+        const updatedState = typeof newState === 'function' ? newState(widgetState) : newState;
+        window.openai.setWidgetState(updatedState);
+        _setWidgetState(updatedState);
+      }, [widgetState]);
+
+      return [widgetState, setWidgetState];
+    }
+
+    function App() {
+      const [count, setCount] = useWidgetState({ count: 0 });
+      const [loading, setLoading] = useState(false);
+      const [toolResponse, setToolResponse] = useState(null);
+      const theme = useOpenAiGlobal('theme');
+      const displayMode = useOpenAiGlobal('displayMode');
+
+      const handleIncrement = () => {
+        setCount(c => ({ ...c, count: (c?.count || 0) + 1 }));
+      };
+
+      const handleCallTool = async () => {
+        setLoading(true);
+        try {
+          const response = await window.openai.callTool('test_widget_action', { current_count: count?.count || 0 });
+          setToolResponse(response.structuredContent.message);
+        } catch (e) {
+          setToolResponse('Error calling tool: ' + e.message);
+        }
+        setLoading(false);
+      };
+
+      return (
+        <div className={`widget-container ${theme === 'dark' ? 'dark' : ''}`}>
+          <h2>Advanced Test Widget</h2>
+          <p>Display Mode: {displayMode}</p>
+          <p>Current Count: {count?.count || 0}</p>
+          <button onClick={handleIncrement}>Increment</button>
+          <button onClick={handleCallTool} disabled={loading}>
+            {loading ? 'Calling Tool...' : 'Call Tool'}
+          </button>
+          {toolResponse && <p>Tool Response: {toolResponse}</p>}
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>

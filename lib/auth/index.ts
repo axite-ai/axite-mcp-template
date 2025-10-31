@@ -58,7 +58,7 @@ const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
 const baseURL =
   process.env.BETTER_AUTH_URL ||
   (process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`) ||
-  'http://localhost:3000';
+  'https://dev.askmymoney.ai';
 
 // Initialize Better Auth with MCP and Stripe plugins
 export const auth = betterAuth({
@@ -89,7 +89,10 @@ export const auth = betterAuth({
   baseURL,
 
   // Secret for signing tokens (MUST be set in production)
-  secret: process.env.BETTER_AUTH_SECRET || process.env.SESSION_SECRET || 'development-secret-change-in-production',
+  secret:
+    process.env.BETTER_AUTH_SECRET ||
+    process.env.SESSION_SECRET ||
+    "development-secret-change-in-production",
 
   // Session configuration
   session: {
@@ -113,6 +116,13 @@ export const auth = betterAuth({
     minPasswordLength: 8,
     maxPasswordLength: 128,
   },
+  telemetry: {
+    debug: true
+  },
+  logger: {
+    level: 'debug',
+  },
+
 
   // Plugins
   plugins: [
@@ -146,7 +156,7 @@ export const auth = betterAuth({
             disabled: false,
             redirectURLs: [
               "https://claude.ai/api/mcp/auth_callback",
-              "https://claude.com/api/mcp/auth_callback"
+              "https://claude.com/api/mcp/auth_callback",
             ],
             skipConsent: true,
           },
@@ -158,11 +168,11 @@ export const auth = betterAuth({
             disabled: false,
             redirectURLs: [
               "https://chatgpt.com/connector_platform_oauth_redirect",
-              "https://chat.openai.com/connector_platform_oauth_redirect"
+              "https://chat.openai.com/connector_platform_oauth_redirect",
             ],
             skipConsent: true,
-          }
-        ]
+          },
+        ],
       },
     }),
     stripe({
@@ -174,58 +184,89 @@ export const auth = betterAuth({
         plans: [
           {
             name: "basic",
-            priceId: process.env.STRIPE_BASIC_PRICE_ID || '',
+            priceId: process.env.STRIPE_BASIC_PRICE_ID || "",
             limits: {
-              maxAccounts: 3
-            }
+              maxAccounts: 3,
+            },
           },
           {
             name: "pro",
-            priceId: process.env.STRIPE_PRO_PRICE_ID || '',
+            priceId: process.env.STRIPE_PRO_PRICE_ID || "",
             limits: {
-              maxAccounts: 10
+              maxAccounts: 10,
             },
             freeTrial: {
               days: 14,
               onTrialStart: async (subscription: Subscription) => {
-                console.log('[Stripe] Trial started', { referenceId: subscription.referenceId });
+                console.log("[Stripe] Trial started", {
+                  referenceId: subscription.referenceId,
+                });
               },
-              onTrialEnd: async ({ subscription }: { subscription: Subscription }, ctx?: any) => {
-                console.log('[Stripe] Trial ended', {
+              onTrialEnd: async (
+                { subscription }: { subscription: Subscription },
+                ctx?: any
+              ) => {
+                console.log("[Stripe] Trial ended", {
                   referenceId: subscription.referenceId,
                   userId: ctx?.user?.id,
                 });
               },
               onTrialExpired: async (subscription: Subscription) => {
-                console.warn('[Stripe] Trial expired without conversion', { referenceId: subscription.referenceId });
-              }
-            }
+                console.warn("[Stripe] Trial expired without conversion", {
+                  referenceId: subscription.referenceId,
+                });
+              },
+            },
           },
           {
             name: "enterprise",
-            priceId: process.env.STRIPE_ENTERPRISE_PRICE_ID || '',
+            priceId: process.env.STRIPE_ENTERPRISE_PRICE_ID || "",
             limits: {
-              maxAccounts: Infinity
-            }
-          }
+              maxAccounts: Infinity,
+            },
+          },
         ],
         requireEmailVerification: false,
-        onSubscriptionComplete: async ({ subscription, plan }: { subscription: Subscription; plan: StripePlan }) => {
-          console.log('[Stripe] Subscription complete', {
+        onSubscriptionComplete: async ({
+          subscription,
+          plan,
+        }: {
+          subscription: Subscription;
+          plan: StripePlan;
+        }) => {
+          console.log("[Stripe] Subscription complete", {
             referenceId: subscription.referenceId,
-            plan: plan.name
+            plan: plan.name,
           });
         },
-        onSubscriptionUpdate: async ({ subscription }: { subscription: Subscription }) => {
-          console.log('[Stripe] Subscription updated', { subscriptionId: subscription.id });
+        onSubscriptionUpdate: async ({
+          subscription,
+        }: {
+          subscription: Subscription;
+        }) => {
+          console.log("[Stripe] Subscription updated", {
+            subscriptionId: subscription.id,
+          });
         },
-        onSubscriptionCancel: async ({ subscription }: { subscription: Subscription }) => {
-          console.log('[Stripe] Subscription canceled', { subscriptionId: subscription.id });
+        onSubscriptionCancel: async ({
+          subscription,
+        }: {
+          subscription: Subscription;
+        }) => {
+          console.log("[Stripe] Subscription canceled", {
+            subscriptionId: subscription.id,
+          });
         },
-        onSubscriptionDeleted: async ({ subscription }: { subscription: Subscription }) => {
-          console.warn('[Stripe] Subscription deleted', { subscriptionId: subscription.id });
-        }
-      }
+        onSubscriptionDeleted: async ({
+          subscription,
+        }: {
+          subscription: Subscription;
+        }) => {
+          console.warn("[Stripe] Subscription deleted", {
+            subscriptionId: subscription.id,
+          });
+        },
+      },
     }),
   ],
 
@@ -234,21 +275,21 @@ export const auth = betterAuth({
     enabled: true,
     window: 60,
     max: 100,
-    storage: 'secondary-storage',
+    storage: "secondary-storage",
     customRules: {
-      '/api/auth/sign-in/*': {
+      "/api/auth/sign-in/*": {
         window: 60,
         max: 10,
       },
-      '/api/auth/oauth/token': {
+      "/api/auth/oauth/token": {
         window: 60,
         max: 20,
       },
-      '/api/auth/oauth/authorize': {
+      "/api/auth/oauth/authorize": {
         window: 60,
         max: 20,
       },
-      '/api/auth/.well-known/*': false,
+      "/api/auth/.well-known/*": false,
     },
   },
 });

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Account Health</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .health-summary {
+      padding: 16px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+    .status {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .status-good {
+      color: #10b981;
+    }
+    .status-warning {
+      color: #f59e0b;
+    }
+    .status-alert {
+      color: #ef4444;
+    }
+    .issues {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .issue {
+      padding: 12px;
+      border-left: 3px solid #ef4444;
+      background-color: #fef2f2;
+      border-radius: 4px;
+    }
+    .issue-title {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .subscribe-prompt {
+      text-align: center;
+      padding: 24px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+    }
+    .subscribe-prompt h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-top: 0;
+      margin-bottom: 8px;
+    }
+    .subscribe-prompt p {
+      margin-top: 0;
+      margin-bottom: 16px;
+    }
+    .subscribe-prompt button {
+      background-color: #2563eb;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .subscribe-prompt button:hover {
+      background-color: #1d4ed8;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script>
+    function renderHealth() {
+      const toolOutput = window.openai?.toolOutput;
+      console.log('Rendering health with toolOutput:', JSON.stringify(toolOutput, null, 2));
+
+      if (!toolOutput) {
+        console.log('No toolOutput found.');
+        document.getElementById('root').innerHTML = '<p>No health data available</p>';
+        return;
+      }
+
+      if (toolOutput.overall_health === 'error' && toolOutput.error_message === 'Subscription required') {
+        console.log('Subscription error detected, rendering prompt.');
+        document.getElementById('root').innerHTML = `
+          <div class="subscribe-prompt">
+            <h3>Subscription Required</h3>
+            <p>Please subscribe to access your account health.</p>
+            <button onclick="window.openai.openExternal({ href: '/custom-page' })">Subscribe Now</button>
+          </div>
+        `;
+        return;
+      }
+
+      if (!toolOutput.accounts) {
+        console.log('No accounts data found in toolOutput.');
+        document.getElementById('root').innerHTML = '<p>No health data available</p>';
+        return;
+      }
+
+      const statusClass = toolOutput.overallStatus === 'healthy' ? 'status-good' : 'status-warning';
+
+      const html = `
+        <div class="health-summary">
+          <div class="status ${statusClass}">
+            Overall Health: ${(toolOutput.overallStatus || 'N/A').toUpperCase()}
+          </div>
+        </div>
+        ${toolOutput.accounts && toolOutput.accounts.some(a => a.warnings.length > 0) ? `
+          <div class="issues">
+            ${toolOutput.accounts.flatMap(a => a.warnings.map(w => `
+              <div class="issue">
+                <div class="issue-title">${a.accountName}</div>
+                <div>${w}</div>
+              </div>
+            `)).join('')}
+          </div>
+        ` : '<p>No issues detected</p>'}
+      `;
+
+      document.getElementById('root').innerHTML = html;
+    }
+
+    // Initial render
+    renderHealth();
+
+    // Listen for updates
+    window.addEventListener('openai:set_globals', () => {
+      renderHealth();
+    });
+  </script>
+</body>
+</html>

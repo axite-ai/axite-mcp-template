@@ -19,20 +19,11 @@ export class EncryptionService {
   private static getEncryptionKey(): Buffer {
     const envKey = process.env.ENCRYPTION_KEY;
 
-    if (envKey) {
-      // Use provided key (must be 32 bytes base64 encoded)
-      return Buffer.from(envKey, 'base64');
+    if (!envKey) {
+            throw new Error("⚠️  ENCRYPTION_KEY not set in production. ");
     }
 
-    // Fallback: derive key from BETTER_AUTH_SECRET
-    const secret = process.env.BETTER_AUTH_SECRET || process.env.SESSION_SECRET || 'development-secret-change-in-production';
-
-    if (process.env.NODE_ENV === 'production' && !envKey) {
-      console.warn('⚠️  ENCRYPTION_KEY not set in production. Using derived key from BETTER_AUTH_SECRET.');
-    }
-
-    // Use PBKDF2 to derive a key from the secret
-    return crypto.pbkdf2Sync(secret, 'askmymoney-salt', 100000, this.KEY_LENGTH, 'sha256');
+    return Buffer.from(envKey, 'base64');
   }
 
   /**
