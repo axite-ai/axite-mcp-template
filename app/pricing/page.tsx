@@ -6,6 +6,7 @@ interface Subscription {
   stripeSubscriptionId?: string;
   plan?: string;
   status?: string;
+  cancelAtPeriodEnd?: boolean;
 }
 
 interface UpgradeRequestBody {

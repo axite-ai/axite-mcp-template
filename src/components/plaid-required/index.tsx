@@ -20,7 +20,10 @@ export default function PlaidRequired() {
       setSuccess(null);
       setError(null);
       try {
-        const exchangeResult = await exchangePlaidPublicToken(public_token, metadata.institution);
+        const exchangeResult = await exchangePlaidPublicToken(
+          public_token,
+          metadata.institution || {}
+        );
         if (!exchangeResult.success) {
           throw new Error(exchangeResult.error);
         }
