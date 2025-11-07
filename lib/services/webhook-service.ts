@@ -38,7 +38,18 @@ export interface PlaidWebhook {
   };
   new_transactions?: number;
   removed_transactions?: string[];
-  [key: string]: any;
+  [key: string]: unknown;
+}
+
+export interface WebhookRecord {
+  id: string;
+  item_id: string;
+  webhook_type: string;
+  webhook_code: string;
+  payload: Record<string, unknown>;
+  processed: boolean;
+  received_at: Date;
+  processed_at?: Date;
 }
 
 /**
@@ -368,7 +379,7 @@ export class WebhookService {
   /**
    * Get unprocessed webhooks (for batch processing)
    */
-  public static async getUnprocessedWebhooks(limit: number = 100): Promise<any[]> {
+  public static async getUnprocessedWebhooks(limit: number = 100): Promise<WebhookRecord[]> {
     const client = await pool.connect();
 
     try {
@@ -386,7 +397,7 @@ export class WebhookService {
   /**
    * Get webhook history for an item
    */
-  public static async getItemWebhookHistory(itemId: string, limit: number = 50): Promise<any[]> {
+  public static async getItemWebhookHistory(itemId: string, limit: number = 50): Promise<WebhookRecord[]> {
     const client = await pool.connect();
 
     try {

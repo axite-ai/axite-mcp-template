@@ -3,6 +3,11 @@
 import React from "react";
 import { useWidgetProps } from "@/app/hooks/use-widget-props";
 
+interface Category {
+  name: string;
+  amount: number;
+}
+
 function formatCurrency(amount: number, currency = 'USD') {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -21,7 +26,7 @@ export default function SpendingInsights() {
 
   return (
     <div className="insights">
-      {Array.isArray(categories) && categories.map((cat: any) => (
+      {Array.isArray(categories) && categories.map((cat: Category) => (
         <div key={cat.name} className="category">
           <div className="category-name">{cat.name}</div>
           <div className="category-amount">{formatCurrency(cat.amount)}</div>

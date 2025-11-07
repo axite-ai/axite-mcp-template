@@ -3,6 +3,17 @@
 import React from "react";
 import { useWidgetProps } from "@/app/hooks/use-widget-props";
 
+interface HealthAccount {
+  account_id: string;
+  name: string;
+  warnings: string[];
+}
+
+interface ToolOutput {
+  accounts?: HealthAccount[];
+  featureName?: string;
+}
+
 const PLANS = [
   {
     id: 'basic',
@@ -29,7 +40,7 @@ const PLANS = [
   }
 ];
 
-function InteractivePricing({ toolOutput }: { toolOutput: any }) {
+function InteractivePricing({ toolOutput }: { toolOutput: ToolOutput }) {
   const [selectedPlan, setSelectedPlan] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -65,9 +76,9 @@ function InteractivePricing({ toolOutput }: { toolOutput: any }) {
       } else {
         throw new Error('No checkout URL returned');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Subscription error:', error);
-      setError(error.message || 'Failed to start subscription. Please try again.');
+      setError(error instanceof Error ? error.message : 'Failed to start subscription. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -175,9 +186,9 @@ export default function AccountHealth() {
           Overall Health: {(toolOutput.overallStatus || 'N/A').toString().toUpperCase()}
         </div>
       </div>
-      {Array.isArray(toolOutput.accounts) && toolOutput.accounts.some((a: any) => a.warnings.length > 0) ? (
+      {Array.isArray(toolOutput.accounts) && toolOutput.accounts.some((a: HealthAccount) => a.warnings.length > 0) ? (
         <div className="issues">
-          {toolOutput.accounts.flatMap((a: any) => a.warnings.map((w: string) => (
+          {toolOutput.accounts.flatMap((a: HealthAccount) => a.warnings.map((w: string) => (
             <div key={`${a.account_id}-${w}`} className="issue">
               <div className="issue-title">{a.name}</div>
               <div>{w}</div>

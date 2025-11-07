@@ -6,7 +6,7 @@
  */
 
 import { Redis } from 'ioredis';
-import { logger, LoggerService } from './logger-service';
+import { logger } from './logger-service';
 
 // Create Redis client (will be null if Redis is not configured)
 let redisClient: Redis | null = null;

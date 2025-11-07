@@ -66,9 +66,9 @@ export default function SubscriptionRequired() {
       } else {
         throw new Error('No checkout URL returned');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Subscription error:', error);
-      setError(error.message || 'Failed to start subscription. Please try again.');
+      setError(error instanceof Error ? error.message : 'Failed to start subscription. Please try again.');
     } finally {
       setIsLoading(false);
     }

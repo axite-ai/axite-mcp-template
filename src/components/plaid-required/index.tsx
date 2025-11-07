@@ -7,7 +7,7 @@ import { useWidgetProps } from "@/app/hooks/use-widget-props";
 import { createPlaidLinkToken, exchangePlaidPublicToken } from "@/app/widgets/plaid-required/actions";
 
 export default function PlaidRequired() {
-  const toolOutput = useWidgetProps();
+  useWidgetProps(); // Required hook call for widget functionality
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [success, setSuccess] = React.useState<string | null>(null);
@@ -20,18 +20,21 @@ export default function PlaidRequired() {
       setSuccess(null);
       setError(null);
       try {
-        const exchangeResult = await exchangePlaidPublicToken(public_token, metadata.institution);
+        const exchangeResult = await exchangePlaidPublicToken(
+          public_token,
+          metadata.institution || {}
+        );
         if (!exchangeResult.success) {
           throw new Error(exchangeResult.error);
         }
         setSuccess(`Successfully connected ${metadata.institution?.name}! You can now use all financial features.`);
-      } catch (error: any) {
-        setError(error.message || 'Failed to complete connection. Please try again.');
+      } catch (error: unknown) {
+        setError(error instanceof Error ? error.message : 'Failed to complete connection. Please try again.');
       } finally {
         setIsLoading(false);
       }
     },
-    onExit: (err, metadata) => {
+    onExit: (err) => {
       if (err) {
         setError('Connection cancelled or failed. Please try again.');
       }
@@ -51,8 +54,8 @@ export default function PlaidRequired() {
         throw new Error(result.error || "Failed to create link token");
       }
       setLinkToken(result.linkToken);
-    } catch (error: any) {
-      setError(error.message || 'Failed to initialize connection. Please try again.');
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'Failed to initialize connection. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -81,7 +84,7 @@ export default function PlaidRequired() {
         {success && <div className="mb-3 p-2 bg-green-500/20 border border-green-500/50 rounded text-green-300 text-xs">{success}</div>}
 
         <div className="bg-gray-800/50 rounded-lg p-4 mb-4">
-          <h3 className="font-semibold mb-3 text-sm">What You'll Get:</h3>
+          <h3 className="font-semibold mb-3 text-sm">What You&apos;ll Get:</h3>
           <ul className="space-y-2">
             <li className="flex items-start text-xs text-gray-300">
               <svg className="w-4 h-4 text-green-400 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -3,6 +3,14 @@
 import React from "react";
 import { useWidgetProps } from "@/app/hooks/use-widget-props";
 
+interface Transaction {
+  transaction_id: string;
+  name: string | null;
+  date: string;
+  amount: number;
+  iso_currency_code: string;
+}
+
 function formatCurrency(amount: number, currency = 'USD') {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -30,7 +38,7 @@ export default function Transactions() {
 
   return (
     <div className="transaction-list">
-      {Array.isArray(transactions) && transactions.map((tx: any) => (
+      {Array.isArray(transactions) && transactions.map((tx: Transaction) => (
         <div key={tx.transaction_id} className="transaction">
           <div className="transaction-info">
             <div className="transaction-name">{tx.name || 'Unknown'}</div>

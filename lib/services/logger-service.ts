@@ -96,11 +96,16 @@ export enum AuditEventType {
 export interface AuditLogEntry {
   userId?: string;
   eventType: AuditEventType;
-  eventData?: Record<string, any>;
+  eventData?: Record<string, unknown>;
   ipAddress?: string;
   userAgent?: string;
   success: boolean;
   errorMessage?: string;
+}
+
+export interface AuditLogRecord extends AuditLogEntry {
+  id: string;
+  created_at: Date;
 }
 
 /**
@@ -251,7 +256,7 @@ export class LoggerService {
   public static async getUserAuditLogs(
     userId: string,
     limit: number = 50
-  ): Promise<any[]> {
+  ): Promise<AuditLogRecord[]> {
     const client = await pool.connect();
 
     try {
@@ -272,7 +277,7 @@ export class LoggerService {
   public static async getFailedAuthAttempts(
     since: Date = new Date(Date.now() - 3600000), // last hour
     limit: number = 100
-  ): Promise<any[]> {
+  ): Promise<AuditLogRecord[]> {
     const client = await pool.connect();
 
     try {

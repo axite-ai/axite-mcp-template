@@ -79,9 +79,10 @@ export async function getAccountBalances(accessToken: string) {
   try {
     const response = await getPlaidClient().accountsGet(request);
     return response.data;
-  } catch (error: any) {
-    console.error('Error getting account balances:', error.response.data);
-    throw new Error(`Failed to get account balances: ${error.response.data.error_message}`);
+  } catch (error: unknown) {
+    const plaidError = error as { response?: { data?: { error_message?: string } } };
+    console.error('Error getting account balances:', plaidError.response?.data);
+    throw new Error(`Failed to get account balances: ${plaidError.response?.data?.error_message || 'Unknown error'}`);
   }
 }
 
@@ -105,9 +106,10 @@ export async function getTransactions(accessToken: string, startDate: string, en
   try {
     const response = await getPlaidClient().transactionsGet(request);
     return response.data;
-  } catch (error: any) {
-    console.error('Error getting transactions:', error.response.data);
-    throw new Error(`Failed to get transactions: ${error.response.data.error_message}`);
+  } catch (error: unknown) {
+    const plaidError = error as { response?: { data?: { error_message?: string } } };
+    console.error('Error getting transactions:', plaidError.response?.data);
+    throw new Error(`Failed to get transactions: ${plaidError.response?.data?.error_message || 'Unknown error'}`);
   }
 }
 

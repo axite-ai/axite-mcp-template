@@ -26,12 +26,15 @@ import type { McpSession } from '../auth/mcp-auth';
  *   console.log(`User timezone: ${metadata['openai/userLocation'].timezone}`);
  * }
  */
-export function extractOpenAIMetadata(params: any): OpenAIMetadata | undefined {
-  const meta = params?._meta;
+export function extractOpenAIMetadata(params: Record<string, unknown>): OpenAIMetadata | undefined {
+  const rawMeta = params?._meta;
 
-  if (!meta || typeof meta !== 'object') {
+  if (!rawMeta || typeof rawMeta !== 'object') {
     return undefined;
   }
+
+  // Cast to a more flexible type for indexing
+  const meta = rawMeta as Record<string, unknown>;
 
   // Check if this looks like OpenAI metadata
   const hasOpenAIFields =
@@ -46,18 +49,20 @@ export function extractOpenAIMetadata(params: any): OpenAIMetadata | undefined {
 
   // Return validated metadata
   // Allow partial metadata - not all fields may be present
+  const defaultLocation = {
+    city: 'Unknown',
+    region: 'Unknown',
+    country: 'US',
+    timezone: 'UTC',
+    latitude: '0',
+    longitude: '0',
+  };
+
   return {
-    'openai/userAgent': meta['openai/userAgent'] || 'unknown',
-    'openai/locale': meta['openai/locale'] || 'en-US',
-    'openai/userLocation': meta['openai/userLocation'] || {
-      city: 'Unknown',
-      region: 'Unknown',
-      country: 'US',
-      timezone: 'UTC',
-      latitude: '0',
-      longitude: '0',
-    },
-    'openai/subject': meta['openai/subject'] || 'unknown',
+    'openai/userAgent': (meta['openai/userAgent'] as string) || 'unknown',
+    'openai/locale': (meta['openai/locale'] as string) || 'en-US',
+    'openai/userLocation': (meta['openai/userLocation'] as typeof defaultLocation | undefined) || defaultLocation,
+    'openai/subject': (meta['openai/subject'] as string) || 'unknown',
   };
 }
 
@@ -80,7 +85,7 @@ export function extractOpenAIMetadata(params: any): OpenAIMetadata | undefined {
 export function createToolContext(
   session: McpSession,
   plaidAccessTokens: string[],
-  params?: any
+  params?: Record<string, unknown>
 ): ToolExecutionContext {
   const metadata = params ? extractOpenAIMetadata(params) : undefined;
 

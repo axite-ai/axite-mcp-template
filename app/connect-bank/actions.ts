@@ -5,14 +5,22 @@ import { headers } from 'next/headers';
 import { hasActiveSubscription } from '@/lib/utils/subscription-helpers';
 import { createLinkToken, exchangePublicToken } from '@/lib/services/plaid-service';
 import { UserService } from '@/lib/services/user-service';
+import type { Pool } from 'pg';
 
 type LinkTokenResult =
   | { success: true; linkToken: string; expiration: string }
   | { success: false; error: string };
 
 type ExchangeTokenResult =
-  | { success: true; itemId: string; institutionName: string | null }
+  | { success: true; itemId: string; institutionName: string | null | undefined }
   | { success: false; error: string };
+
+type PlaidMetadata = {
+  institution?: {
+    institution_id?: string | null;
+    name?: string | null;
+  } | null;
+};
 
 export const createPlaidLinkToken = async (): Promise<LinkTokenResult> => {
   try {
@@ -65,7 +73,7 @@ export const createPlaidLinkToken = async (): Promise<LinkTokenResult> => {
     const existingItems = await UserService.getUserPlaidItems(session.user.id, true);
 
     // Get user's subscription to check limits
-    const pool = auth.options.database as any;
+    const pool = auth.options.database as Pool;
     const client = await pool.connect();
 
     try {
@@ -119,7 +127,7 @@ export const createPlaidLinkToken = async (): Promise<LinkTokenResult> => {
 
 export const exchangePlaidPublicToken = async (
   publicToken: string,
-  metadata: any
+  metadata: PlaidMetadata
 ): Promise<ExchangeTokenResult> => {
   try {
     // Check 1: Authentication
@@ -153,8 +161,8 @@ export const exchangePlaidPublicToken = async (
     const { accessToken, itemId } = await exchangePublicToken(publicToken);
 
     // Extract institution info from metadata
-    const institutionId = metadata?.institution?.institution_id || null;
-    const institutionName = metadata?.institution?.name || null;
+    const institutionId = metadata?.institution?.institution_id || undefined;
+    const institutionName = metadata?.institution?.name || undefined;
 
     // Save the Plaid item to database (access token will be encrypted)
     await UserService.savePlaidItem(
@@ -176,7 +184,7 @@ export const exchangePlaidPublicToken = async (
       const { EmailService } = await import("@/lib/services/email-service");
 
       // Get user details and count of connected accounts
-      const pool = auth.options.database as any;
+      const pool = auth.options.database as Pool;
       const client = await pool.connect();
 
       try {

@@ -67,6 +67,7 @@ function NextChatSDKBootstrap({ baseUrl }: { baseUrl: string }) {
             });
 
             const originalReplaceState = history.replaceState;
+            // eslint-disable-next-line react-hooks/immutability
             history.replaceState = (s, unused, url) => {
               const u = new URL(url ?? "", window.location.href);
               const href = u.pathname + u.search + u.hash;
@@ -74,6 +75,7 @@ function NextChatSDKBootstrap({ baseUrl }: { baseUrl: string }) {
             };
 
             const originalPushState = history.pushState;
+            // eslint-disable-next-line react-hooks/immutability
             history.pushState = (s, unused, url) => {
               const u = new URL(url ?? "", window.location.href);
               const href = u.pathname + u.search + u.hash;
@@ -111,6 +113,7 @@ function NextChatSDKBootstrap({ baseUrl }: { baseUrl: string }) {
             if (isInIframe && window.location.origin !== appOrigin) {
               const originalFetch = window.fetch;
 
+              // eslint-disable-next-line react-hooks/immutability
               window.fetch = (input: URL | RequestInfo, init?: RequestInit) => {
                 let url: URL;
                 if (typeof input === "string" || input instanceof URL) {

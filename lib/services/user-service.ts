@@ -33,7 +33,7 @@ export interface PlaidItem {
   lastSyncedAt: Date | null;
   status: 'active' | 'error' | 'revoked';
   errorCode: string | null;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
 }
 
 /**

@@ -3,6 +3,23 @@
 import React from "react";
 import { useWidgetProps } from "@/app/hooks/use-widget-props";
 
+interface Account {
+  account_id: string;
+  name: string;
+  type: string;
+  mask: string | null;
+  balances: {
+    current: number | null;
+    available: number | null;
+    iso_currency_code: string;
+  };
+}
+
+interface ToolOutput {
+  accounts?: Account[];
+  featureName?: string;
+}
+
 const PLANS = [
   {
     id: 'basic',
@@ -36,7 +53,7 @@ function formatCurrency(amount: number, currency = 'USD') {
   }).format(amount);
 }
 
-function InteractivePricing({ toolOutput }: { toolOutput: any }) {
+function InteractivePricing({ toolOutput }: { toolOutput: ToolOutput }) {
   const [selectedPlan, setSelectedPlan] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -72,9 +89,9 @@ function InteractivePricing({ toolOutput }: { toolOutput: any }) {
       } else {
         throw new Error('No checkout URL returned');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Subscription error:', error);
-      setError(error.message || 'Failed to start subscription. Please try again.');
+      setError(error instanceof Error ? error.message : 'Failed to start subscription. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -177,7 +194,7 @@ export default function AccountBalances() {
 
   return (
     <div className="account-list">
-      {Array.isArray(accounts) && accounts.map((account: any) => (
+      {Array.isArray(accounts) && accounts.map((account: Account) => (
         <div key={account.account_id} className="account">
           <div className="account-name">{account.name}</div>
           <div className="account-type">{account.type} • {account.mask ? `****${account.mask}` : ''}</div>
