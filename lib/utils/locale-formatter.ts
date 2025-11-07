@@ -51,7 +51,7 @@ export class LocaleFormatter {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       }).format(amount);
-    } catch (error) {
+    } catch {
       // Fallback if locale/currency combination is invalid
       return new Intl.NumberFormat('en-US', {
         style: 'currency',
@@ -84,7 +84,7 @@ export class LocaleFormatter {
         dateStyle: style,
         timeStyle: 'short',
       }).format(d);
-    } catch (error) {
+    } catch {
       // Fallback to UTC if timezone is invalid
       return new Intl.DateTimeFormat(this.locale, {
         dateStyle: style,
@@ -114,7 +114,7 @@ export class LocaleFormatter {
         month: 'short',
         day: 'numeric',
       }).format(d);
-    } catch (error) {
+    } catch {
       return new Intl.DateTimeFormat(this.locale, {
         year: 'numeric',
         month: 'short',

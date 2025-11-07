@@ -5,6 +5,11 @@ import { createLinkToken, exchangePublicToken } from "@/lib/services/plaid-servi
 import { auth } from "@/lib/auth";
 import { UserService } from "@/lib/services/user-service";
 
+interface PlaidInstitution {
+  id?: string;
+  name?: string;
+}
+
 export async function createPlaidLinkToken() {
   const headersList = await headers();
   const session = await auth.api.getSession({ headers: headersList });
@@ -21,7 +26,7 @@ export async function createPlaidLinkToken() {
   }
 }
 
-export async function exchangePlaidPublicToken(publicToken: string, institution: any) {
+export async function exchangePlaidPublicToken(publicToken: string, institution: PlaidInstitution) {
   const headersList = await headers();
   const session = await auth.api.getSession({ headers: headersList });
   if (!session?.user?.id) {

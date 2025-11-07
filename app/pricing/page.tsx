@@ -1,7 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+
+interface Subscription {
+  stripeSubscriptionId?: string;
+  plan?: string;
+  status?: string;
+}
+
+interface UpgradeRequestBody {
+  plan: string;
+  successUrl: string;
+  cancelUrl: string;
+  subscriptionId?: string;
+}
 
 // Define subscription plans based on your auth config
 const PLANS = [
@@ -64,10 +76,9 @@ const PLANS = [
 ] as const;
 
 export default function PricingPage() {
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [currentSubscription, setCurrentSubscription] = useState<any>(null);
+  const [currentSubscription, setCurrentSubscription] = useState<Subscription | null>(null);
   const [loadingSubscription, setLoadingSubscription] = useState(true);
 
   // Fetch current subscription status
@@ -104,7 +115,7 @@ export default function PricingPage() {
       const baseUrl = window.location.origin;
 
       // Prepare request body
-      const requestBody: any = {
+      const requestBody: UpgradeRequestBody = {
         plan: planId,
         successUrl: `${baseUrl}/pricing/success`,
         cancelUrl: `${baseUrl}/pricing`,

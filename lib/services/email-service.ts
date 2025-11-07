@@ -196,8 +196,7 @@ export const EmailService = {
   async sendAdditionalAccountNotification(
     email: string,
     userName: string,
-    institutionName: string,
-    totalAccounts: number
+    institutionName: string
   ) {
     return this.sendBankConnectionConfirmation(
       email,

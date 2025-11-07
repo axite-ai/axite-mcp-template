@@ -7,7 +7,7 @@ import { useWidgetProps } from "@/app/hooks/use-widget-props";
 import { createPlaidLinkToken, exchangePlaidPublicToken } from "@/app/widgets/plaid-required/actions";
 
 export default function PlaidRequired() {
-  const toolOutput = useWidgetProps();
+  useWidgetProps(); // Required hook call for widget functionality
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [success, setSuccess] = React.useState<string | null>(null);
@@ -31,7 +31,7 @@ export default function PlaidRequired() {
         setIsLoading(false);
       }
     },
-    onExit: (err, metadata) => {
+    onExit: (err) => {
       if (err) {
         setError('Connection cancelled or failed. Please try again.');
       }

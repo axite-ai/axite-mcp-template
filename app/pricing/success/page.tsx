@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 
 export default function SubscriptionSuccessPage() {
   const [countdown, setCountdown] = useState(5);

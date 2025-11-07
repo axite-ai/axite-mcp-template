@@ -8,7 +8,6 @@
 import { betterAuth } from "better-auth";
 import { mcp, apiKey } from "better-auth/plugins";
 import { stripe } from "@better-auth/stripe";
-import { createAuthMiddleware } from "better-auth/api";
 import { Pool } from "pg";
 import { Redis } from "ioredis";
 import Stripe from "stripe";
@@ -233,7 +232,7 @@ export const auth = betterAuth({
       subscription: {
         enabled: true,
         // Allow API key to create subscriptions for any user
-        authorizeReference: async ({ user, session, referenceId, action }) => {
+        authorizeReference: async () => {
           // If using API key authentication, allow creating subscriptions for any referenceId
           // This is safe because the API key is only accessible server-side
           return true;
