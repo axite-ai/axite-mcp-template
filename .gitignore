@@ -40,3 +40,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# widgets
+/widgets/node_modules
+/widgets/dist
+/widgets/.vite

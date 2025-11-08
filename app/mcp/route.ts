@@ -62,6 +62,59 @@ const handler = withMcpAuth(auth, async (req, session) => {
 
   return createMcpHandler(async (server) => {
     // ============================================================================
+    // WIDGET RESOURCES
+    // ============================================================================
+    const fs = await import('fs');
+    const path = await import('path');
+    const widgetsDir = path.join(process.cwd(), 'widgets', 'dist', 'bundled');
+
+    // Helper to read widget HTML
+    const readWidgetHtml = (name: string) => {
+      try {
+        const filePath = path.join(widgetsDir, `${name}.html`);
+        return fs.readFileSync(filePath, 'utf-8');
+      } catch (error) {
+        console.error(`[MCP] Failed to read widget ${name}:`, error);
+        return null;
+      }
+    };
+
+    // Register widget resources
+    const widgets = [
+      { id: 'account-balances', title: 'Account Balances Widget', description: 'Interactive account balances view' },
+      { id: 'transactions', title: 'Transactions Widget', description: 'Transaction list with details' },
+      { id: 'spending-insights', title: 'Spending Insights Widget', description: 'Category-based spending breakdown' },
+      { id: 'account-health', title: 'Account Health Widget', description: 'Account health status and warnings' },
+    ];
+
+    for (const widget of widgets) {
+      const html = readWidgetHtml(widget.id);
+      if (html) {
+        server.registerResource(
+          widget.id,
+          `ui://widget/${widget.id}.html`,
+          {},
+          async () => ({
+            contents: [{
+              uri: `ui://widget/${widget.id}.html`,
+              mimeType: 'text/html+skybridge',
+              text: html,
+              _meta: {
+                'openai/widgetDescription': widget.description,
+                'openai/widgetPrefersBorder': true,
+                'openai/widgetCSP': {
+                  connect_domains: [],
+                  resource_domains: [],
+                },
+              },
+            }],
+          })
+        );
+        console.log(`[MCP] Registered widget: ${widget.id}`);
+      }
+    }
+
+    // ============================================================================
     // AUTHENTICATED PLAID TOOLS
     // ============================================================================
 
@@ -74,9 +127,9 @@ const handler = withMcpAuth(auth, async (req, session) => {
       },
       _meta: {
         securitySchemes: [{ type: "oauth2" }], // Back-compat mirror for ChatGPT
+        "openai/outputTemplate": "ui://widget/account-balances.html",
         "openai/toolInvocation/invoking": "Fetching your account balances",
         "openai/toolInvocation/invoked": "Retrieved account balances",
-        // TODO: Add openai/outputTemplate when widget is built
       },
       annotations: {
         destructiveHint: false,
@@ -177,9 +230,9 @@ const handler = withMcpAuth(auth, async (req, session) => {
       },
       _meta: {
         securitySchemes: [{ type: "oauth2" }], // Back-compat mirror for ChatGPT
+        "openai/outputTemplate": "ui://widget/transactions.html",
         "openai/toolInvocation/invoking": "Fetching transactions...",
         "openai/toolInvocation/invoked": "Transactions retrieved",
-        // TODO: Add openai/outputTemplate when widget is built
       },
       annotations: {
         destructiveHint: false,
@@ -257,9 +310,9 @@ const handler = withMcpAuth(auth, async (req, session) => {
       },
       _meta: {
         securitySchemes: [{ type: "oauth2" }], // Back-compat mirror for ChatGPT
+        "openai/outputTemplate": "ui://widget/spending-insights.html",
         "openai/toolInvocation/invoking": "Analyzing spending...",
         "openai/toolInvocation/invoked": "Spending analysis ready",
-        // TODO: Add openai/outputTemplate when widget is built
       },
       annotations: {
         destructiveHint: false,
@@ -355,7 +408,9 @@ const handler = withMcpAuth(auth, async (req, session) => {
       inputSchema: {},
       _meta: {
         securitySchemes: [{ type: "oauth2" }], // Back-compat mirror for ChatGPT
-        // TODO: Add openai/outputTemplate when widget is built
+        "openai/outputTemplate": "ui://widget/account-health.html",
+        "openai/toolInvocation/invoking": "Checking account health...",
+        "openai/toolInvocation/invoked": "Health check complete",
       },
       annotations: {
         destructiveHint: false,
