@@ -23,14 +23,25 @@ console.log("Auth API methods at startup:", Object.keys(auth.api));
 type ExtendedToolConfig = any;
 
 const handler = withMcpAuth(auth, async (req, session) => {
-  console.log("MCP session object:", session);
+  // Detailed session logging
+  console.log("[MCP] Session received:", {
+    hasSession: !!session,
+    userId: session?.userId,
+    clientId: session?.clientId,
+    scopes: session?.scopes,
+    accessTokenExpiry: session?.accessTokenExpiresAt,
+    isExpired: session?.accessTokenExpiresAt ? new Date(session.accessTokenExpiresAt) < new Date() : null,
+  });
 
   // Log the request details
   const url = new URL(req.url);
-  console.log("MCP Request:", {
+  const authHeader = req.headers.get('authorization');
+  console.log("[MCP] Request details:", {
     method: req.method,
     path: url.pathname,
     searchParams: Object.fromEntries(url.searchParams),
+    hasAuthHeader: !!authHeader,
+    authType: authHeader?.split(' ')[0],
   });
 
   // Clone request to read body without consuming it
@@ -38,7 +49,12 @@ const handler = withMcpAuth(auth, async (req, session) => {
   try {
     const body = await clonedReq.text();
     if (body) {
-      console.log("MCP Request Body:", body.substring(0, 500));
+      const parsed = JSON.parse(body);
+      console.log("[MCP] Request body:", {
+        method: parsed.method,
+        id: parsed.id,
+        paramsKeys: parsed.params ? Object.keys(parsed.params) : [],
+      });
     }
   } catch {
     // Ignore if body can't be read
@@ -50,6 +66,31 @@ const handler = withMcpAuth(auth, async (req, session) => {
     // ============================================================================
 
     // Get Account Balances
+    const getAccountBalancesConfig = {
+      title: "Get Account Balances",
+      description: "Get current account balances and details for all linked accounts. Shows an interactive card view. Requires authentication.",
+      inputSchema: {
+        _meta: z.any().optional().describe("OpenAI Apps SDK metadata"),
+      },
+      _meta: {
+        securitySchemes: [{ type: "oauth2" }], // Back-compat mirror for ChatGPT
+        "openai/toolInvocation/invoking": "Fetching your account balances",
+        "openai/toolInvocation/invoked": "Retrieved account balances",
+        // TODO: Add openai/outputTemplate when widget is built
+      },
+      annotations: {
+        destructiveHint: false,
+        openWorldHint: false,
+        readOnlyHint: true,
+      },
+      securitySchemes: [{ type: "oauth2" }],
+    } as any;
+
+    console.log("[MCP] Registering tool: get_account_balances", {
+      securitySchemes: getAccountBalancesConfig.securitySchemes,
+      annotations: getAccountBalancesConfig.annotations,
+    });
+
     server.registerTool(
       "get_account_balances",
       {
@@ -107,12 +148,6 @@ const handler = withMcpAuth(auth, async (req, session) => {
             },
           ],
           structuredContent: output,
-          _meta: {
-            "openai/outputTemplate": "/widgets/account-balances",
-            "openai/toolInvocation/invoked": `Retrieved ${allAccounts.length} account${allAccounts.length !== 1 ? "s" : ""}`,
-            "openai/widgetAccessible": false,
-            "openai/resultCanProduceWidget": true,
-          },
         };
       } catch (error) {
         console.error("[Tool] get_account_balances error", { error });
@@ -141,10 +176,10 @@ const handler = withMcpAuth(auth, async (req, session) => {
         limit: z.number().optional().describe("Maximum number of transactions to return. Defaults to 100."),
       },
       _meta: {
-        "openai/outputTemplate": "/widgets/transactions",
+        securitySchemes: [{ type: "oauth2" }], // Back-compat mirror for ChatGPT
         "openai/toolInvocation/invoking": "Fetching transactions...",
         "openai/toolInvocation/invoked": "Transactions retrieved",
-        "openai/widgetAccessible": true,
+        // TODO: Add openai/outputTemplate when widget is built
       },
       annotations: {
         destructiveHint: false,
@@ -221,10 +256,10 @@ const handler = withMcpAuth(auth, async (req, session) => {
         endDate: z.string().optional().describe("End date in YYYY-MM-DD format. Defaults to today."),
       },
       _meta: {
-        "openai/outputTemplate": "/widgets/spending-insights",
+        securitySchemes: [{ type: "oauth2" }], // Back-compat mirror for ChatGPT
         "openai/toolInvocation/invoking": "Analyzing spending...",
         "openai/toolInvocation/invoked": "Spending analysis ready",
-        "openai/widgetAccessible": true,
+        // TODO: Add openai/outputTemplate when widget is built
       },
       annotations: {
         destructiveHint: false,
@@ -319,7 +354,8 @@ const handler = withMcpAuth(auth, async (req, session) => {
       description: "Get account health information including balances, warnings, and status. Requires authentication.",
       inputSchema: {},
       _meta: {
-        "openai/outputTemplate": "/widgets/account-health",
+        securitySchemes: [{ type: "oauth2" }], // Back-compat mirror for ChatGPT
+        // TODO: Add openai/outputTemplate when widget is built
       },
       annotations: {
         destructiveHint: false,
@@ -384,9 +420,6 @@ const handler = withMcpAuth(auth, async (req, session) => {
             },
           ],
           structuredContent: output,
-          _meta: {
-            "openai/outputTemplate": "/widgets/account-health",
-          },
         };
       } catch (error) {
         console.error("[Tool] check_account_health error", { error });
@@ -413,7 +446,7 @@ const handler = withMcpAuth(auth, async (req, session) => {
         description: "A simple widget to test basic functionality.",
         inputSchema: {},
         _meta: {
-          "openai/outputTemplate": "/widgets/test-widget",
+          // Widget template removed until implemented
         },
         securitySchemes: [{ type: "noauth" }],
       } as ExtendedToolConfig,
@@ -444,6 +477,7 @@ const handler = withMcpAuth(auth, async (req, session) => {
           plan: z.enum(['basic', 'pro', 'enterprise']).describe("The subscription plan to purchase"),
         },
         _meta: {
+          securitySchemes: [{ type: "oauth2" }], // Back-compat mirror for ChatGPT
           "openai/widgetAccessible": true,  // Allow widgets to call this tool
         },
         securitySchemes: [{ type: "oauth2" }],
@@ -503,7 +537,7 @@ const handler = withMcpAuth(auth, async (req, session) => {
         description: "A more complex widget to test state and tool calls.",
         inputSchema: {},
         _meta: {
-          "openai/outputTemplate": "/widgets/advanced-test-widget",
+          // Widget template removed until implemented
         },
         securitySchemes: [{ type: "noauth" }],
       } as ExtendedToolConfig,
@@ -737,12 +771,6 @@ const handler = withMcpAuth(auth, async (req, session) => {
           },
         ],
         structuredContent: output,
-        _meta: {
-          "openai/toolInvocation/invoking": `Getting ${topic} tips`,
-          "openai/toolInvocation/invoked": `Retrieved ${tips.length} tips`,
-          "openai/widgetAccessible": false,
-          "openai/resultCanProduceWidget": false,
-        },
       };
     }
   );
@@ -828,12 +856,6 @@ const handler = withMcpAuth(auth, async (req, session) => {
           },
         ],
         structuredContent: output,
-        _meta: {
-          "openai/toolInvocation/invoking": "Calculating budget",
-          "openai/toolInvocation/invoked": "Budget calculated",
-          "openai/widgetAccessible": false,
-          "openai/resultCanProduceWidget": false,
-        },
       };
     }
   );
@@ -841,4 +863,114 @@ const handler = withMcpAuth(auth, async (req, session) => {
 })(req);
 });
 
-export { handler as GET, handler as POST };
+// Wrap handlers with error logging
+const wrappedHandler = async (req: Request) => {
+  try {
+    logOAuthRequest('MCP', req);
+
+    // Check if this is a tools/list request for detailed logging
+    const clonedReq = req.clone();
+    let isToolsList = false;
+    try {
+      const body = await clonedReq.text();
+      if (body) {
+        const parsed = JSON.parse(body);
+        isToolsList = parsed.method === 'tools/list';
+      }
+    } catch (e) {
+      // Ignore parsing errors
+    }
+
+    const response = await handler(req);
+
+    console.log('[MCP] Response:', {
+      status: response.status,
+      statusText: response.statusText,
+      contentType: response.headers.get('content-type'),
+    });
+
+    // Patch tools/list response to add top-level securitySchemes for ChatGPT compatibility
+    if (isToolsList && response.ok) {
+      const clonedResponse = response.clone();
+      try {
+        const text = await clonedResponse.text();
+        const lines = text.split('\n');
+        const patchedLines: string[] = [];
+        let wasPatched = false;
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = JSON.parse(line.substring(6));
+            if (data.result?.tools) {
+              // Patch each tool to copy _meta.securitySchemes to top level
+              for (const tool of data.result.tools) {
+                if (tool._meta?.securitySchemes && !tool.securitySchemes) {
+                  tool.securitySchemes = tool._meta.securitySchemes;
+                  wasPatched = true;
+                  console.log(`[MCP] Patched ${tool.name} with securitySchemes:`, tool.securitySchemes);
+                }
+              }
+
+              // Log the patched result
+              console.log('[MCP] tools/list response (after patching):', {
+                toolCount: data.result.tools.length,
+                wasPatched,
+                tools: data.result.tools.map((t: any) => ({
+                  name: t.name,
+                  hasSecuritySchemes: !!t.securitySchemes,
+                  hasMetaSecuritySchemes: !!t._meta?.securitySchemes,
+                  securitySchemes: t.securitySchemes,
+                  metaSecuritySchemes: t._meta?.securitySchemes,
+                })),
+              });
+
+              // Rebuild the line with patched data
+              patchedLines.push('data: ' + JSON.stringify(data));
+            } else {
+              patchedLines.push(line);
+            }
+          } else {
+            patchedLines.push(line);
+          }
+        }
+
+        // Return patched response if we made changes
+        if (wasPatched) {
+          console.log('[MCP] Returning patched tools/list response');
+          return new Response(patchedLines.join('\n'), {
+            status: response.status,
+            statusText: response.statusText,
+            headers: response.headers,
+          });
+        }
+      } catch (e) {
+        console.error('[MCP] Failed to patch tools/list response:', e);
+      }
+    }
+
+    return response;
+  } catch (error) {
+    logOAuthError('MCP', error, {
+      url: req.url,
+      method: req.method,
+    });
+
+    // Return a proper error response
+    return new Response(
+      JSON.stringify({
+        jsonrpc: '2.0',
+        error: {
+          code: -32603,
+          message: 'Internal server error',
+          data: error instanceof Error ? error.message : 'Unknown error',
+        },
+      }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+  }
+};
+
+export { wrappedHandler as GET, wrappedHandler as POST };

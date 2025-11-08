@@ -6,7 +6,7 @@
  */
 
 import { betterAuth } from "better-auth";
-import { mcp, apiKey } from "better-auth/plugins";
+import { mcp, apiKey, jwt } from "better-auth/plugins";
 import { stripe } from "@better-auth/stripe";
 import { Pool } from "pg";
 import { Redis } from "ioredis";
@@ -113,6 +113,9 @@ export const auth = betterAuth({
     process.env.SESSION_SECRET ||
     "development-secret-change-in-production",
 
+  // Disable conflicting endpoints for OAuth compliance (MCP plugin provides /api/auth/mcp/token)
+  disabledPaths: ["/token"],
+
   // Session configuration
   session: {
     expiresIn: 60 * 60 * 24 * 30, // 30 days
@@ -170,6 +173,21 @@ export const auth = betterAuth({
       // This is needed for endpoints like upgradeSubscription that require authentication
       enableSessionForAPIKeys: true,
     }),
+    jwt({
+      // JWT plugin provides JWKS endpoint for token verification
+      // Required for OAuth 2.1 compliance with ChatGPT
+      disableSettingJwtHeader: true, // OAuth compliance - don't set JWT in response headers
+      jwt: {
+        issuer: baseURL,
+        audience: resourceURL,
+        expirationTime: "1h",
+      },
+      jwks: {
+        keyPairConfig: {
+          alg: "RS256", // Use RS256 for better compatibility with OAuth clients
+        },
+      },
+    }),
     mcp({
       loginPage: "/login",
       resource: resourceURL,
@@ -187,8 +205,6 @@ export const auth = betterAuth({
           "email",
           "claudeai",
           "offline_access",
-          "read:accounts",
-          "read:transactions",
         ],
         trustedClients: [
           {
