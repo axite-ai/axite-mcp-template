@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useWidgetProps } from "@/app/hooks/use-widget-props";
+import PlaidConnectionPrompt from "@/src/components/plaid-connection-prompt";
 
 interface Transaction {
   transaction_id: string;
@@ -29,6 +30,11 @@ function formatDate(dateString: string) {
 
 export default function Transactions() {
   const toolOutput = useWidgetProps();
+
+  // Check if bank connection is required
+  if (toolOutput?.message === 'Bank connection required') {
+    return <PlaidConnectionPrompt />;
+  }
 
   if (!toolOutput || !toolOutput.transactions) {
     return <p>No transactions available</p>;

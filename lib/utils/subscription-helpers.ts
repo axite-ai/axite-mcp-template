@@ -19,16 +19,26 @@ export async function getUserSubscription(userId: string) {
   const client = await pool.connect();
   console.log('[Subscription] Successfully connected to database client.');
   try {
-    // First, check ALL subscriptions for debugging (no ORDER BY since no createdAt column)
+    // First, check ALL subscriptions for this user (any status)
     const allSubsResult = await client.query(
-      `SELECT * FROM subscription WHERE "referenceId" = $1`,
+      `SELECT id, "referenceId", plan, status, "stripeSubscriptionId", "stripeCustomerId",
+              "periodStart", "periodEnd", "cancelAtPeriodEnd"
+       FROM subscription
+       WHERE "referenceId" = $1`,
       [userId]
     );
-    console.log('[Subscription] All subscriptions for user:', {
+    console.log('[Subscription] All subscriptions for user (any status):', {
       userId,
       count: allSubsResult.rowCount,
-      subscriptions: allSubsResult.rows
+      subscriptions: allSubsResult.rows,
+      statuses: allSubsResult.rows.map(s => s.status)
     });
+
+    // Also check if there are ANY subscriptions in the table
+    const totalSubsResult = await client.query(
+      `SELECT COUNT(*) as total FROM subscription`
+    );
+    console.log('[Subscription] Total subscriptions in database:', totalSubsResult.rows[0]);
 
     // Query for active subscriptions for this user
     const result = await client.query(

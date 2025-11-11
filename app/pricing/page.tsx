@@ -81,6 +81,7 @@ export default function PricingPage() {
   const [error, setError] = useState<string | null>(null);
   const [currentSubscription, setCurrentSubscription] = useState<Subscription | null>(null);
   const [loadingSubscription, setLoadingSubscription] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   // Fetch current subscription status
   useEffect(() => {
@@ -90,7 +91,15 @@ export default function PricingPage() {
           credentials: "include",
         });
 
+        if (response.status === 401) {
+          // User is not authenticated
+          setIsAuthenticated(false);
+          setLoadingSubscription(false);
+          return;
+        }
+
         if (response.ok) {
+          setIsAuthenticated(true);
           const data = await response.json();
           // data should be an array of subscriptions
           if (Array.isArray(data) && data.length > 0) {
@@ -106,6 +115,9 @@ export default function PricingPage() {
 
     fetchSubscription();
   }, []);
+
+  // Note: Auto-checkout removed - users from ChatGPT go directly to Stripe checkout
+  // This page is now only for direct web visitors
 
   const handleSubscribe = async (planId: string) => {
     setIsLoading(planId);
@@ -169,6 +181,31 @@ export default function PricingPage() {
             Get started with AskMyMoney and take control of your finances with AI-powered insights
           </p>
         </div>
+
+        {/* Authentication Required Message */}
+        {!loadingSubscription && isAuthenticated === false && (
+          <div className="mb-8 max-w-2xl mx-auto bg-yellow-500/10 border border-yellow-500/50 rounded-lg p-6">
+            <div className="flex items-start">
+              <svg className="w-6 h-6 text-yellow-400 mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-yellow-400 mb-2">
+                  Sign In Required
+                </h3>
+                <p className="text-gray-300 mb-4">
+                  To subscribe to a plan, please sign in to your AskMyMoney account first.
+                </p>
+                <a
+                  href="/login"
+                  className="inline-block bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold py-2 px-6 rounded-lg transition-all"
+                >
+                  Sign In
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Current Subscription Status */}
         {!loadingSubscription && currentSubscription && (
@@ -252,7 +289,7 @@ export default function PricingPage() {
               {/* CTA Button */}
               <button
                 onClick={() => handleSubscribe(plan.planId)}
-                disabled={isLoading !== null || (currentSubscription?.plan === plan.planId && currentSubscription?.status === 'active')}
+                disabled={isAuthenticated === false || isLoading !== null || (currentSubscription?.plan === plan.planId && currentSubscription?.status === 'active')}
                 className={`w-full py-3 px-6 rounded-lg font-semibold transition-all ${
                   currentSubscription?.plan === plan.planId && currentSubscription?.status === 'active'
                     ? "bg-green-600 cursor-default"
@@ -260,12 +297,14 @@ export default function PricingPage() {
                     ? "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
                     : "bg-gray-700 hover:bg-gray-600"
                 } ${
-                  isLoading === plan.planId
+                  isLoading === plan.planId || isAuthenticated === false
                     ? "opacity-50 cursor-not-allowed"
                     : ""
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
-                {currentSubscription?.plan === plan.planId && currentSubscription?.status === 'active' ? (
+                {isAuthenticated === false ? (
+                  "Sign In to Subscribe"
+                ) : currentSubscription?.plan === plan.planId && currentSubscription?.status === 'active' ? (
                   "Current Plan ✓"
                 ) : isLoading === plan.planId ? (
                   <span className="flex items-center justify-center">

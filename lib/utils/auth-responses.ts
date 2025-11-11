@@ -83,9 +83,15 @@ export function createSubscriptionRequiredResponse(featureName?: string) {
 /**
  * Create a response prompting the user to connect their bank via Plaid Link
  *
+ * The widget will use the MCP session directly via server actions,
+ * so no JWT token generation is needed.
+ *
+ * @param userId - The user ID (for logging/debugging)
+ * @param headers - The headers from the MCP request (unused, kept for API compatibility)
  * @returns MCP tool response with Plaid connection widget
  */
-export function createPlaidRequiredResponse() {
+export async function createPlaidRequiredResponse(userId: string, headers: Headers) {
+  console.log('[Plaid Required Response] Creating response for user:', userId);
   const baseMessage = "Please connect your bank account to access your financial data.";
 
   const responseMeta: OpenAIResponseMetadata = {
@@ -103,20 +109,17 @@ export function createPlaidRequiredResponse() {
         text: baseMessage,
       } as { [x: string]: unknown; type: "text"; text: string },
     ],
-    // Include structured content so widget can access baseUrl
+    // Widget will use MCP session directly through server actions
     structuredContent: {
       baseUrl: baseURL,
+      userId, // User ID for logging/debugging
       message: "Bank connection required",
     },
     isError: false,
     _meta: responseMeta,
   };
 
-  console.log('[Plaid Required Response] Creating response:', {
-    baseUrl: baseURL,
-    widgetUri: responseMeta["openai/outputTemplate"],
-    fullResponse: JSON.stringify(response, null, 2),
-  });
+  console.log('[Plaid Required Response] Widget will use MCP session for authentication');
 
   return response;
 }

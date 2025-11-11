@@ -78,6 +78,7 @@ const handler = withMcpAuth(auth, async (req, session) => {
       { id: 'transactions', title: 'Transactions Widget', description: 'Transaction list with details', path: '/widgets/transactions' },
       { id: 'spending-insights', title: 'Spending Insights Widget', description: 'Category-based spending breakdown', path: '/widgets/spending-insights' },
       { id: 'account-health', title: 'Account Health Widget', description: 'Account health status and warnings', path: '/widgets/account-health' },
+      { id: 'plaid-required', title: 'Connect Bank Account', description: 'Prompts user to connect their bank account via Plaid', path: '/widgets/plaid-required' },
     ];
 
     for (const widget of widgets) {
@@ -105,8 +106,8 @@ const handler = withMcpAuth(auth, async (req, session) => {
                 'openai/widgetDescription': widget.description,
                 'openai/widgetPrefersBorder': true,
                 'openai/widgetCSP': {
-                  connect_domains: [],
-                  resource_domains: [],
+                  connect_domains: [baseURL],
+                  resource_domains: [baseURL],
                 },
               },
             }],
@@ -174,7 +175,7 @@ const handler = withMcpAuth(auth, async (req, session) => {
           // Check 3: Plaid Connection
           const accessTokens = await UserService.getUserAccessTokens(session.userId);
           if (accessTokens.length === 0) {
-            return createPlaidRequiredResponse();
+            return await createPlaidRequiredResponse(session.userId, req.headers);
           }
 
         // Fetch balances from all connected accounts
@@ -252,7 +253,7 @@ const handler = withMcpAuth(auth, async (req, session) => {
         // Check 3: Plaid Connection
         const accessTokens = await UserService.getUserAccessTokens(session.userId);
         if (accessTokens.length === 0) {
-          return createPlaidRequiredResponse();
+          return await createPlaidRequiredResponse(session.userId, req.headers);
         }
 
         // Default date range: last 30 days
@@ -332,7 +333,7 @@ const handler = withMcpAuth(auth, async (req, session) => {
         // Check 3: Plaid Connection
         const accessTokens = await UserService.getUserAccessTokens(session.userId);
         if (accessTokens.length === 0) {
-          return createPlaidRequiredResponse();
+          return await createPlaidRequiredResponse(session.userId, req.headers);
         }
 
         const end = endDate || new Date().toISOString().split("T")[0];
@@ -436,7 +437,7 @@ const handler = withMcpAuth(auth, async (req, session) => {
         // Check 3: Plaid Connection
         const accessTokens = await UserService.getUserAccessTokens(session.userId);
         if (accessTokens.length === 0) {
-          return createPlaidRequiredResponse();
+          return await createPlaidRequiredResponse(session.userId, req.headers);
         }
 
         // Collect health data from all accounts
@@ -549,28 +550,108 @@ const handler = withMcpAuth(auth, async (req, session) => {
           }
 
           const plan = args.plan as string;
-          const baseUrl = process.env.BETTER_AUTH_URL || 'https://dev.askmymoney.ai';
 
-          console.log('[Checkout Session] MCP Session userId:', session.userId);
+          console.log('[Checkout Session] Creating Stripe checkout for:', { userId: session.userId, plan });
 
-          // TODO: Implement Stripe checkout session creation
-          // This would require Stripe SDK integration
-          const checkoutUrl = `${baseUrl}/pricing?plan=${plan}`;
+          // Get the Stripe client and user from auth
+          const Stripe = (await import("stripe")).default;
+          const { Pool } = await import("pg");
 
-          console.log('[Checkout Session] Redirecting to pricing page:', checkoutUrl);
+          const pool = auth.options.database as InstanceType<typeof Pool>;
+          const client = await pool.connect();
 
-          const result = { url: checkoutUrl };
+          try {
+            // Get user and their Stripe customer ID from database
+            const userResult = await client.query(
+              'SELECT id, email, name, "stripeCustomerId" FROM "user" WHERE id = $1',
+              [session.userId]
+            );
 
-          return {
-            content: [{
-              type: "text",
-              text: `Checkout session created for ${plan} plan`,
-            }],
-            structuredContent: {
-              checkoutUrl: result.url,
-              plan,
-            },
-          };
+            const user = userResult.rows[0];
+            if (!user) {
+              throw new Error('User not found');
+            }
+
+            console.log('[Checkout Session] User found:', { userId: user.id, hasStripeId: !!user.stripeCustomerId });
+
+            // Get Stripe client
+            const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+              apiVersion: "2025-09-30.clover",
+            });
+
+            // Get price ID for the plan
+            const planPriceIds: Record<string, string> = {
+              basic: process.env.STRIPE_BASIC_PRICE_ID || '',
+              pro: process.env.STRIPE_PRO_PRICE_ID || '',
+              enterprise: process.env.STRIPE_ENTERPRISE_PRICE_ID || '',
+            };
+
+            const priceId = planPriceIds[plan.toLowerCase()];
+            if (!priceId) {
+              throw new Error(`Invalid plan: ${plan}`);
+            }
+
+            console.log('[Checkout Session] Creating checkout with priceId:', priceId);
+
+            // Create or get Stripe customer
+            let customerId = user.stripeCustomerId;
+            if (!customerId) {
+              const customer = await stripeClient.customers.create({
+                email: user.email,
+                name: user.name || undefined,
+                metadata: { userId: user.id },
+              });
+              customerId = customer.id;
+
+              // Update user with Stripe customer ID
+              await client.query(
+                'UPDATE "user" SET "stripeCustomerId" = $1 WHERE id = $2',
+                [customerId, user.id]
+              );
+
+              console.log('[Checkout Session] Created Stripe customer:', customerId);
+            }
+
+            // Create Stripe checkout session
+            // IMPORTANT: Better Auth expects 'referenceId' not 'userId' in metadata
+            const checkoutSession = await stripeClient.checkout.sessions.create({
+              customer: customerId,
+              mode: 'subscription',
+              line_items: [
+                {
+                  price: priceId,
+                  quantity: 1,
+                },
+              ],
+              success_url: `${baseURL}/pricing/success?session_id={CHECKOUT_SESSION_ID}`,
+              cancel_url: `${baseURL}/pricing`,
+              subscription_data: {
+                metadata: {
+                  referenceId: user.id,  // Better Auth uses referenceId, not userId
+                  plan: plan,
+                },
+              },
+              metadata: {
+                referenceId: user.id,  // Better Auth uses referenceId
+                plan: plan,
+              },
+            });
+
+            console.log('[Checkout Session] Created successfully:', checkoutSession.url);
+
+            return {
+              content: [{
+                type: "text",
+                text: `Checkout session created for ${plan} plan`,
+              }],
+              structuredContent: {
+                checkoutUrl: checkoutSession.url,
+                plan,
+              },
+            };
+          } finally {
+            client.release();
+          }
         } catch (error) {
           console.error('[Tool] create_checkout_session error', { error });
           return {

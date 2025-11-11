@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { usePlaidLink } from 'react-plaid-link';
 import { createPlaidLinkToken, exchangePlaidPublicToken } from './actions';
 
@@ -11,6 +12,7 @@ interface PlaidLinkPageProps {
 }
 
 export default function ConnectBankPage() {
+  const searchParams = useSearchParams();
   const [pageData, setPageData] = useState<PlaidLinkPageProps>({
     linkToken: null,
     error: null,
@@ -19,20 +21,23 @@ export default function ConnectBankPage() {
   const [isSuccess, setIsSuccess] = useState(false);
 
   useEffect(() => {
-    // Fetch link token on mount using server action
-    const fetchLinkToken = async () => {
+    // Initialize the page - fetch Plaid link token
+    const initializePage = async () => {
       try {
-        const result = await createPlaidLinkToken();
-        if (!result.success) {
+        console.log('[Connect Bank] Fetching Plaid link token...');
+        const linkTokenResult = await createPlaidLinkToken();
+
+        if (!linkTokenResult.success) {
           // If authentication error, provide helpful message
-          if (result.error.includes('Authentication required')) {
+          if (linkTokenResult.error.includes('Authentication required')) {
             throw new Error(
-              'Session expired. Please return to ChatGPT and try again.'
+              'Please sign in first. Return to ChatGPT and authenticate.'
             );
           }
-          throw new Error(result.error);
+          throw new Error(linkTokenResult.error);
         }
-        setPageData({ linkToken: result.linkToken, error: null });
+
+        setPageData({ linkToken: linkTokenResult.linkToken, error: null });
       } catch (error) {
         setPageData({
           linkToken: null,
@@ -41,7 +46,7 @@ export default function ConnectBankPage() {
       }
     };
 
-    fetchLinkToken();
+    initializePage();
   }, []);
 
   const { open, ready } = usePlaidLink({

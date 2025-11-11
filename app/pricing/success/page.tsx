@@ -1,27 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
 export default function SubscriptionSuccessPage() {
-  const [countdown, setCountdown] = useState(5);
-
-  useEffect(() => {
-    // Countdown timer
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          // Close the window after countdown
-          window.close();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white flex items-center justify-center px-4">
       <div className="max-w-md w-full text-center">
@@ -46,17 +25,17 @@ export default function SubscriptionSuccessPage() {
 
         {/* Success Message */}
         <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
-          Subscription Confirmed!
+          Subscription Confirmed! 🎉
         </h1>
         <p className="text-xl text-gray-300 mb-8">
-          Check your email for confirmation and next steps.
+          Your payment was successful. You now have access to all premium features!
         </p>
 
-        {/* Email Icon */}
-        <div className="bg-gray-800/50 rounded-lg p-8 mb-8">
-          <div className="flex justify-center mb-4">
+        {/* Next Steps */}
+        <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-6 mb-8">
+          <div className="flex items-start text-left">
             <svg
-              className="w-16 h-16 text-blue-400"
+              className="w-6 h-6 text-blue-400 mr-3 flex-shrink-0 mt-1"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -65,27 +44,58 @@ export default function SubscriptionSuccessPage() {
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={2}
-                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
+            <div>
+              <h3 className="text-lg font-semibold text-blue-400 mb-2">
+                Next Step: Connect Your Bank
+              </h3>
+              <p className="text-gray-300 mb-4">
+                Return to <strong>ChatGPT</strong> to connect your bank account via Plaid.
+                This will enable all financial features like transaction tracking, spending insights, and account health monitoring.
+              </p>
+              <p className="text-sm text-gray-400">
+                Simply go back to your ChatGPT conversation and try any financial query -
+                you&apos;ll be prompted to connect your bank account.
+              </p>
+            </div>
           </div>
-          <p className="text-gray-300 text-lg">
-            We&apos;ve sent you a confirmation email with instructions on how to connect your bank account and start using AskMyMoney.
-          </p>
         </div>
 
-        {/* Redirect Info */}
-        <p className="text-gray-400 mb-6">
-          This window will close in <span className="text-blue-400 font-semibold">{countdown}</span> seconds...
-        </p>
+        {/* Action Items */}
+        <div className="space-y-3 text-sm text-gray-400 mb-8">
+          <div className="flex items-center justify-center">
+            <svg className="w-4 h-4 text-green-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            <span>Subscription activated</span>
+          </div>
+          <div className="flex items-center justify-center">
+            <svg className="w-4 h-4 text-blue-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Return to ChatGPT to connect your bank</span>
+          </div>
+          <div className="flex items-center justify-center text-gray-500">
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <span>Start tracking your finances</span>
+          </div>
+        </div>
 
-        {/* Manual Close Button */}
+        {/* Close Window Button */}
         <button
           onClick={() => window.close()}
           className="inline-block bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold py-3 px-6 rounded-lg transition-all"
         >
-          Close Window
+          Close This Window
         </button>
+
+        <p className="text-xs text-gray-500 mt-4">
+          You can safely close this tab and return to ChatGPT
+        </p>
       </div>
     </div>
   );

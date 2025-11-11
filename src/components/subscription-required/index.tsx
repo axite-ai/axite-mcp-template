@@ -53,19 +53,33 @@ export default function SubscriptionRequired() {
         plan: selectedPlan
       });
 
-      const parsedResult = JSON.parse(result.result);
+      console.log('[Subscription Widget] Tool result:', result);
 
-      if (parsedResult.error) {
-        throw new Error(parsedResult.error || 'Failed to create checkout session');
+      // Access structuredContent from the MCP tool response
+      // The result object contains the full MCP response including structuredContent
+      let checkoutUrl: string | undefined;
+
+      // Try to access structuredContent directly
+      if (result.structuredContent?.checkoutUrl) {
+        checkoutUrl = result.structuredContent.checkoutUrl;
+      }
+      // Fallback: try parsing result if it's a JSON string
+      else if (typeof result.result === 'string') {
+        try {
+          const parsed = JSON.parse(result.result);
+          checkoutUrl = parsed.checkoutUrl;
+        } catch {
+          // If not JSON, result.result might be the URL directly
+          checkoutUrl = result.result;
+        }
       }
 
-      const checkoutUrl = parsedResult.checkoutUrl;
-
-      if (checkoutUrl) {
-        window.openai.openExternal({ href: checkoutUrl });
-      } else {
-        throw new Error('No checkout URL returned');
+      if (!checkoutUrl) {
+        throw new Error('No checkout URL returned from server');
       }
+
+      console.log('[Subscription Widget] Opening checkout URL:', checkoutUrl);
+      window.openai.openExternal({ href: checkoutUrl });
     } catch (error: unknown) {
       console.error('Subscription error:', error);
       setError(error instanceof Error ? error.message : 'Failed to start subscription. Please try again.');

@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useWidgetProps } from "@/app/hooks/use-widget-props";
+import PlaidConnectionPrompt from "@/src/components/plaid-connection-prompt";
 
 interface Account {
   account_id: string;
@@ -18,6 +19,7 @@ interface Account {
 interface ToolOutput {
   accounts?: Account[];
   featureName?: string;
+  message?: string;
 }
 
 const PLANS = [
@@ -76,19 +78,31 @@ function InteractivePricing({ toolOutput }: { toolOutput: ToolOutput }) {
         plan: selectedPlan
       });
 
-      const parsedResult = JSON.parse(result.result);
+      console.log('[Account Balances Widget] Tool result:', result);
 
-      if (parsedResult.error) {
-        throw new Error(parsedResult.error || 'Failed to create checkout session');
+      // Access structuredContent from the MCP tool response
+      let checkoutUrl: string | undefined;
+
+      // Try to access structuredContent directly
+      if (result.structuredContent?.checkoutUrl) {
+        checkoutUrl = result.structuredContent.checkoutUrl;
+      }
+      // Fallback: try parsing result if it's a JSON string
+      else if (typeof result.result === 'string') {
+        try {
+          const parsed = JSON.parse(result.result);
+          checkoutUrl = parsed.checkoutUrl;
+        } catch {
+          checkoutUrl = result.result;
+        }
       }
 
-      const checkoutUrl = parsedResult.checkoutUrl;
-
-      if (checkoutUrl) {
-        window.openai.openExternal({ href: checkoutUrl });
-      } else {
-        throw new Error('No checkout URL returned');
+      if (!checkoutUrl) {
+        throw new Error('No checkout URL returned from server');
       }
+
+      console.log('[Account Balances Widget] Opening checkout URL:', checkoutUrl);
+      window.openai.openExternal({ href: checkoutUrl });
     } catch (error: unknown) {
       console.error('Subscription error:', error);
       setError(error instanceof Error ? error.message : 'Failed to start subscription. Please try again.');
@@ -180,6 +194,11 @@ export default function AccountBalances() {
 
   if (!toolOutput) {
     return <p>No accounts available</p>;
+  }
+
+  // Check if bank connection is required
+  if (toolOutput.message === 'Bank connection required') {
+    return <PlaidConnectionPrompt />;
   }
 
   if (toolOutput.error_message === 'Subscription required' || toolOutput.featureName) {

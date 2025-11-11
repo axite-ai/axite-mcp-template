@@ -6,16 +6,67 @@ import { useWidgetProps } from "@/app/hooks/use-widget-props";
 
 import { createPlaidLinkToken, exchangePlaidPublicToken } from "@/app/widgets/plaid-required/actions";
 
+interface WidgetProps extends Record<string, unknown> {
+  baseUrl?: string;
+  userId?: string;
+  message?: string;
+}
+
 export default function PlaidRequired() {
-  useWidgetProps(); // Required hook call for widget functionality
+  const props = useWidgetProps<WidgetProps>();
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [success, setSuccess] = React.useState<string | null>(null);
   const [linkToken, setLinkToken] = React.useState<string | null>(null);
+  const [plaidSdkError, setPlaidSdkError] = React.useState<string | null>(null);
+  const [debugLogs, setDebugLogs] = React.useState<string[]>([]);
 
-  const { open, ready } = usePlaidLink({
+  // Helper to add debug logs
+  const addLog = React.useCallback((message: string) => {
+    console.log(`[PlaidRequired Widget] ${message}`);
+    setDebugLogs(prev => [...prev, `${new Date().toISOString()}: ${message}`]);
+  }, []);
+
+  // Detect CSP and sandbox restrictions
+  React.useEffect(() => {
+    addLog('Widget initialized in ChatGPT iframe');
+    addLog(`Props received: ${JSON.stringify(props)}`);
+
+    // Check if we're in an iframe
+    if (window.self !== window.top) {
+      addLog('Running inside iframe (expected in ChatGPT)');
+    }
+
+    // Check for CSP violations
+    const cspHandler = (e: SecurityPolicyViolationEvent) => {
+      addLog(`CSP VIOLATION: ${e.violatedDirective} - ${e.blockedURI}`);
+      if (e.blockedURI.includes('plaid.com')) {
+        setPlaidSdkError(`Plaid SDK blocked by CSP: ${e.violatedDirective}`);
+      }
+    };
+
+    document.addEventListener('securitypolicyviolation', cspHandler as EventListener);
+
+    // Monitor global errors
+    const errorHandler = (e: ErrorEvent) => {
+      addLog(`Global error: ${e.message} at ${e.filename}:${e.lineno}`);
+      if (e.message.includes('plaid') || e.filename?.includes('plaid')) {
+        setPlaidSdkError(`Plaid SDK error: ${e.message}`);
+      }
+    };
+
+    window.addEventListener('error', errorHandler);
+
+    return () => {
+      document.removeEventListener('securitypolicyviolation', cspHandler as EventListener);
+      window.removeEventListener('error', errorHandler);
+    };
+  }, [props, addLog]);
+
+  const { open, ready, error: plaidHookError } = usePlaidLink({
     token: linkToken,
     onSuccess: async (public_token, metadata) => {
+      addLog(`Plaid onSuccess callback - Institution: ${metadata.institution?.name}`);
       setIsLoading(true);
       setSuccess(null);
       setError(null);
@@ -27,35 +78,56 @@ export default function PlaidRequired() {
         if (!exchangeResult.success) {
           throw new Error(exchangeResult.error);
         }
+        addLog(`Successfully connected bank: ${metadata.institution?.name}`);
         setSuccess(`Successfully connected ${metadata.institution?.name}! You can now use all financial features.`);
       } catch (error: unknown) {
-        setError(error instanceof Error ? error.message : 'Failed to complete connection. Please try again.');
+        const errorMsg = error instanceof Error ? error.message : 'Failed to complete connection';
+        addLog(`Exchange token failed: ${errorMsg}`);
+        setError(errorMsg);
       } finally {
         setIsLoading(false);
       }
     },
     onExit: (err) => {
       if (err) {
+        addLog(`Plaid onExit with error: ${JSON.stringify(err)}`);
         setError('Connection cancelled or failed. Please try again.');
+      } else {
+        addLog('Plaid onExit - user cancelled');
       }
     },
   });
 
+  // Monitor for Plaid SDK loading errors
+  React.useEffect(() => {
+    if (plaidHookError) {
+      const errorMsg = plaidHookError instanceof Error ? plaidHookError.message : 'Unknown SDK error';
+      addLog(`Plaid SDK hook error: ${errorMsg}`);
+      setPlaidSdkError(`Plaid SDK failed to load: ${errorMsg}`);
+    }
+  }, [plaidHookError, addLog]);
+
   const handleConnect = async () => {
     if (isLoading) return;
+
+    addLog('Connect button clicked');
 
     setIsLoading(true);
     setError(null);
     setSuccess(null);
 
     try {
+      addLog('Creating Plaid link token via server action (uses MCP session)...');
       const result = await createPlaidLinkToken();
       if (!result.success || !result.linkToken) {
         throw new Error(result.error || "Failed to create link token");
       }
+      addLog(`Link token created successfully: ${result.linkToken.substring(0, 20)}...`);
       setLinkToken(result.linkToken);
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'Failed to initialize connection. Please try again.');
+      const errorMsg = error instanceof Error ? error.message : 'Failed to initialize connection';
+      addLog(`Link token creation failed: ${errorMsg}`);
+      setError(errorMsg + '. Try the fallback link below.');
     } finally {
       setIsLoading(false);
     }
@@ -63,9 +135,19 @@ export default function PlaidRequired() {
 
   React.useEffect(() => {
     if (linkToken && ready) {
-      open();
+      addLog('Plaid Link ready, opening modal...');
+      try {
+        open();
+        addLog('Plaid Link opened successfully');
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+        addLog(`Failed to open Plaid Link: ${errorMsg}`);
+        setPlaidSdkError(`Failed to open Plaid: ${errorMsg}`);
+      }
+    } else if (linkToken && !ready) {
+      addLog('Link token exists but Plaid SDK not ready yet...');
     }
-  }, [linkToken, ready, open]);
+  }, [linkToken, ready, open, addLog]);
 
   return (
     <div className="p-4 rounded-lg bg-gradient-to-br from-gray-800 to-gray-900 border border-green-500/30 text-white shadow-xl">
@@ -79,6 +161,15 @@ export default function PlaidRequired() {
             <p className="text-sm text-gray-300">Link your financial accounts to access this feature</p>
           </div>
         </div>
+
+        {/* Plaid SDK Error Warning */}
+        {plaidSdkError && (
+          <div className="mb-3 p-3 bg-yellow-500/20 border border-yellow-500/50 rounded text-yellow-200 text-xs">
+            <div className="font-semibold mb-1">⚠️ Plaid SDK Loading Issue</div>
+            <div className="mb-2">{plaidSdkError}</div>
+            <div className="text-yellow-300/80">This may be due to ChatGPT sandbox restrictions. Use the fallback link below instead.</div>
+          </div>
+        )}
 
         {error && <div className="mb-3 p-2 bg-red-500/20 border border-red-500/50 rounded text-red-300 text-xs">{error}</div>}
         {success && <div className="mb-3 p-2 bg-green-500/20 border border-green-500/50 rounded text-green-300 text-xs">{success}</div>}
@@ -140,6 +231,22 @@ export default function PlaidRequired() {
             </span>
           ) : 'Connect Bank Account'}
         </button>
+
+        {/* Debug Logs Section */}
+        {debugLogs.length > 0 && (
+          <details className="mt-4 text-xs">
+            <summary className="cursor-pointer text-gray-400 hover:text-gray-300">
+              Debug Logs ({debugLogs.length})
+            </summary>
+            <div className="mt-2 p-2 bg-black/30 rounded border border-gray-700 max-h-40 overflow-y-auto">
+              {debugLogs.map((log, i) => (
+                <div key={i} className="font-mono text-gray-400 text-[10px] mb-1">
+                  {log}
+                </div>
+              ))}
+            </div>
+          </details>
+        )}
 
         <p className="text-xs text-gray-500 text-center mt-2">
           Powered by Plaid

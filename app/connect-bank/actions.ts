@@ -1,7 +1,7 @@
 'use server';
 
 import { auth } from '@/lib/auth';
-import { headers } from 'next/headers';
+import { headers, cookies } from 'next/headers';
 import { hasActiveSubscription } from '@/lib/utils/subscription-helpers';
 import { createLinkToken, exchangePublicToken } from '@/lib/services/plaid-service';
 import { UserService } from '@/lib/services/user-service';
@@ -78,25 +78,24 @@ export const createPlaidLinkToken = async (): Promise<LinkTokenResult> => {
 
     try {
       const subResult = await client.query(
-        `SELECT s.*, sp.limits
-         FROM subscription s
-         LEFT JOIN LATERAL (
-           SELECT limits FROM unnest(ARRAY[
-             '{"name": "basic", "limits": {"maxAccounts": 3}}'::jsonb,
-             '{"name": "pro", "limits": {"maxAccounts": 10}}'::jsonb,
-             '{"name": "enterprise", "limits": {"maxAccounts": 999999}}'::jsonb
-           ]) AS plan
-           WHERE plan->>'name' = s.plan
-         ) sp ON true
-         WHERE s.user_id = $1
-         AND s.status IN ('active', 'trialing')
-         ORDER BY s.created_at DESC
+        `SELECT plan FROM subscription
+         WHERE "referenceId" = $1
+         AND status IN ('active', 'trialing')
+         ORDER BY "periodStart" DESC
          LIMIT 1`,
         [session.user.id]
       );
 
       const subscription = subResult.rows[0];
-      const maxAccounts = subscription?.limits?.maxAccounts ?? 3;
+      const plan = subscription?.plan || 'basic';
+
+      // Map plan to account limits (matches auth config in lib/auth/index.ts)
+      const planLimits: Record<string, number> = {
+        basic: 3,
+        pro: 10,
+        enterprise: 999999,
+      };
+      const maxAccounts = planLimits[plan] ?? 3;
 
       if (existingItems.length >= maxAccounts) {
         return {
