@@ -2,7 +2,8 @@
 
 import { baseURL } from "@/baseUrl";
 import Stripe from "stripe";
-import { Pool } from "pg";
+import { pool } from "@/lib/db";
+import { auth } from "@/lib/auth";
 
 type UpgradeResult =
   | { success: true; checkoutUrl: string }
@@ -49,20 +50,12 @@ export async function upgradeSubscription(userId: string, plan: string): Promise
 
     // Get user's Stripe customer ID from database
     // Better Auth stores this in the user table when createCustomerOnSignUp is true
-    const pool = new Pool({
-      host: process.env.POSTGRES_HOST,
-      port: parseInt(process.env.POSTGRES_PORT || "5432"),
-      database: process.env.POSTGRES_DATABASE,
-      user: process.env.POSTGRES_USER,
-      password: process.env.POSTGRES_PASSWORD,
-      ssl: process.env.POSTGRES_SSL === "true" ? { rejectUnauthorized: false } : false,
-    });
-
     let stripeCustomerId: string | null = null;
+    const client = await pool.connect();
 
     try {
-      const result = await pool.query(
-        'SELECT "stripeCustomerId" FROM "user" WHERE id = $1',
+      const result = await client.query(
+        'SELECT stripe_customer_id FROM "user" WHERE id = $1',
         [userId]
       );
 
@@ -73,11 +66,11 @@ export async function upgradeSubscription(userId: string, plan: string): Promise
         };
       }
 
-      stripeCustomerId = result.rows[0].stripeCustomerId;
+      stripeCustomerId = result.rows[0].stripe_customer_id;
 
       // If no customer ID exists, create one
       if (!stripeCustomerId) {
-        const userResult = await pool.query(
+        const userResult = await client.query(
           'SELECT email, name FROM "user" WHERE id = $1',
           [userId]
         );
@@ -94,19 +87,39 @@ export async function upgradeSubscription(userId: string, plan: string): Promise
         stripeCustomerId = customer.id;
 
         // Update user with Stripe customer ID
-        await pool.query(
-          'UPDATE "user" SET "stripeCustomerId" = $1 WHERE id = $2',
+        await client.query(
+          'UPDATE "user" SET stripe_customer_id = $1 WHERE id = $2',
           [stripeCustomerId, userId]
         );
 
         console.log("[Subscription Action] Created Stripe customer:", stripeCustomerId);
       }
     } finally {
-      await pool.end();
+      client.release();
     }
 
+    // CRITICAL: Pre-create subscription record in database with status "incomplete"
+    // This is required for Better Auth webhooks to work - they need the subscriptionId
+    const ctx = await auth.$context;
+    const subscription = await ctx.adapter.create({
+      model: "subscription",
+      data: {
+        plan: planLower,
+        stripeCustomerId: stripeCustomerId,
+        status: "incomplete",
+        referenceId: userId,
+        seats: 1,
+      },
+    });
+
+    console.log("[Subscription Action] Created incomplete subscription:", {
+      subscriptionId: subscription.id,
+      plan: planLower,
+      referenceId: userId,
+    });
+
     // Create Stripe checkout session
-    // CRITICAL: Must include metadata in BOTH places for Better Auth webhooks to work
+    // CRITICAL: Must include subscriptionId metadata for Better Auth webhooks to work
     const checkoutSession = await stripe.checkout.sessions.create({
       customer: stripeCustomerId,
       mode: "subscription",
@@ -118,8 +131,10 @@ export async function upgradeSubscription(userId: string, plan: string): Promise
       ],
       success_url: `${baseURL}/pricing/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseURL}/pricing`,
+      client_reference_id: userId, // CRITICAL: Fallback for referenceId lookup
       metadata: {
-        referenceId: userId, // Checkout session metadata
+        referenceId: userId,
+        subscriptionId: subscription.id, // CRITICAL: Database subscription ID (NOT Stripe subscription ID)
         plan: planLower,
       },
       subscription_data: {

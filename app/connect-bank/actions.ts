@@ -1,11 +1,11 @@
 'use server';
 
 import { auth } from '@/lib/auth';
+import { pool } from '@/lib/db';
 import { headers, cookies } from 'next/headers';
 import { hasActiveSubscription } from '@/lib/utils/subscription-helpers';
 import { createLinkToken, exchangePublicToken } from '@/lib/services/plaid-service';
 import { UserService } from '@/lib/services/user-service';
-import type { Pool } from 'pg';
 
 type LinkTokenResult =
   | { success: true; linkToken: string; expiration: string }
@@ -73,15 +73,14 @@ export const createPlaidLinkToken = async (): Promise<LinkTokenResult> => {
     const existingItems = await UserService.getUserPlaidItems(session.user.id, true);
 
     // Get user's subscription to check limits
-    const pool = auth.options.database as Pool;
     const client = await pool.connect();
 
     try {
       const subResult = await client.query(
         `SELECT plan FROM subscription
-         WHERE "referenceId" = $1
+         WHERE reference_id = $1
          AND status IN ('active', 'trialing')
-         ORDER BY "periodStart" DESC
+         ORDER BY period_start DESC
          LIMIT 1`,
         [session.user.id]
       );
@@ -183,7 +182,6 @@ export const exchangePlaidPublicToken = async (
       const { EmailService } = await import("@/lib/services/email-service");
 
       // Get user details and count of connected accounts
-      const pool = auth.options.database as Pool;
       const client = await pool.connect();
 
       try {

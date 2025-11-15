@@ -7,14 +7,13 @@ import { config } from "dotenv";
 config();
 
 import crypto from "crypto";
-import { auth } from "@/lib/auth";
+import { pool } from "@/lib/db";
 
 async function testTokenGeneration() {
   try {
     console.log("Testing one-time token generation with manual session...\n");
 
     const userId = "dr4XkWadrXtV9iJ28JOzLwDk8hhfdLBw";
-    const pool = auth.options.database as any;
 
     console.log("Creating temporary session...");
 

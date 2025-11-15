@@ -4,8 +4,7 @@
  * Utilities for checking subscription status, tiers, and limits using Better Auth Stripe plugin
  */
 
-import { auth } from "../auth";
-import { Pool } from "pg";
+import { pool } from "@/lib/db";
 
 /**
  * Get user's subscription from Better Auth Stripe plugin
@@ -14,17 +13,16 @@ import { Pool } from "pg";
  * The auth.api methods are designed for external API calls with session cookies.
  */
 export async function getUserSubscription(userId: string) {
-  const pool = auth.options.database as Pool;
   console.log('[Subscription] Attempting to connect to database from pool...');
   const client = await pool.connect();
   console.log('[Subscription] Successfully connected to database client.');
   try {
     // First, check ALL subscriptions for this user (any status)
     const allSubsResult = await client.query(
-      `SELECT id, "referenceId", plan, status, "stripeSubscriptionId", "stripeCustomerId",
-              "periodStart", "periodEnd", "cancelAtPeriodEnd"
+      `SELECT id, reference_id, plan, status, stripe_subscription_id, stripe_customer_id,
+              period_start, period_end, cancel_at_period_end
        FROM subscription
-       WHERE "referenceId" = $1`,
+       WHERE reference_id = $1`,
       [userId]
     );
     console.log('[Subscription] All subscriptions for user (any status):', {
@@ -43,9 +41,9 @@ export async function getUserSubscription(userId: string) {
     // Query for active subscriptions for this user
     const result = await client.query(
       `SELECT * FROM subscription
-      WHERE "referenceId" = $1
+      WHERE reference_id = $1
       AND status IN ('active', 'trialing')
-      ORDER BY "periodStart" DESC NULLS LAST
+      ORDER BY period_start DESC NULLS LAST
       LIMIT 1`,
       [userId]
     );
