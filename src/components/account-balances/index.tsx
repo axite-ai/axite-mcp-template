@@ -2,7 +2,7 @@
 
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Maximize2, ChevronDown, ChevronUp } from "lucide-react";
+import { Maximize2, ChevronDown, ChevronUp, TrendingUp, TrendingDown } from "lucide-react";
 import { useWidgetProps } from "@/src/use-widget-props";
 import { useOpenAiGlobal } from "@/src/use-openai-global";
 import { useWidgetState } from "@/src/use-widget-state";
@@ -12,6 +12,7 @@ import { useTheme } from "@/src/use-theme";
 import { formatCurrency } from "@/src/utils/format";
 import { checkWidgetAuth } from "@/src/utils/widget-auth-check";
 import { cn } from "@/lib/utils/cn";
+import type { AccountOverviewContent } from "@/lib/types/tool-responses";
 
 interface Account {
   account_id: string;
@@ -26,16 +27,14 @@ interface Account {
   };
 }
 
-interface ToolOutput extends Record<string, unknown> {
-  totalBalance?: number;
-  accountCount?: number;
-  featureName?: string;
-  message?: string;
-  error_message?: string;
+interface Projection {
+  month: number;
+  projectedBalance: number;
+  confidence: "high" | "medium" | "low";
 }
 
-interface ToolMetadata {
-  accounts: Account[];
+interface ToolOutput extends Record<string, unknown> {
+  structuredContent?: AccountOverviewContent;
 }
 
 interface BalancesUIState extends Record<string, unknown> {
@@ -62,6 +61,18 @@ function getAccountColor(type: string) {
   if (lower.includes("investment")) return "from-amber-500 to-amber-600";
   if (lower.includes("loan")) return "from-red-500 to-red-600";
   return "from-gray-500 to-gray-600";
+}
+
+function getHealthColor(score: number) {
+  if (score >= 80) return "text-green-600 dark:text-green-400";
+  if (score >= 60) return "text-yellow-600 dark:text-yellow-400";
+  return "text-red-600 dark:text-red-400";
+}
+
+function getTrendIcon(trend: string) {
+  if (trend === "improving") return <TrendingUp className="w-4 h-4 text-green-600" />;
+  if (trend === "declining") return <TrendingDown className="w-4 h-4 text-red-600" />;
+  return null;
 }
 
 interface AccountCardProps {
@@ -223,7 +234,7 @@ function AccountCard({ account, isExpanded, onToggle, isDark }: AccountCardProps
 
 export default function AccountBalances() {
   const toolOutput = useWidgetProps<ToolOutput>();
-  const toolMetadata = useOpenAiGlobal("toolResponseMetadata") as ToolMetadata | null;
+  const toolMetadata = useOpenAiGlobal("toolResponseMetadata") as any;
   const [uiState, setUiState] = useWidgetState<BalancesUIState>({
     expandedAccountIds: [],
   });
@@ -250,12 +261,19 @@ export default function AccountBalances() {
   const authComponent = checkWidgetAuth(toolOutput);
   if (authComponent) return authComponent;
 
-  const accounts = toolMetadata?.accounts ?? [];
-  const totalBalance = toolOutput?.totalBalance ?? 0;
-  const accountCount = toolOutput?.accountCount ?? accounts.length;
+  if (!toolOutput?.structuredContent) {
+    return (
+      <div className="p-8 text-center text-black/60 dark:text-white/60">
+        <p>No account data available</p>
+      </div>
+    );
+  }
+
+  const { summary, accounts } = toolOutput.structuredContent;
+  const projections = (toolMetadata?.projections ?? toolOutput.structuredContent.projections ?? []) as Projection[];
 
   // No data check
-  if (accounts.length === 0) {
+  if (!accounts || accounts.length === 0) {
     return (
       <div className="p-8 text-center text-black/60 dark:text-white/60">
         <p>No accounts found</p>
@@ -312,9 +330,9 @@ export default function AccountBalances() {
               isDark ? "text-white" : "text-black"
             )}
           >
-            Account Balances
+            Financial Overview
           </h1>
-          <div className="flex items-center gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div>
               <p
                 className={cn(
@@ -330,21 +348,70 @@ export default function AccountBalances() {
                   isDark ? "text-white" : "text-black"
                 )}
               >
-                {formatCurrency(totalBalance)}
+                {formatCurrency(summary.totalBalance)}
+              </p>
+              <p className={cn("text-xs mt-1", isDark ? "text-white/50" : "text-black/50")}>
+                {summary.accountCount} {summary.accountCount === 1 ? "account" : "accounts"}
               </p>
             </div>
-            <div
-              className={cn(
-                "ml-auto px-4 py-2 rounded-full text-sm font-medium",
-                isDark
-                  ? "bg-emerald-900/30 text-emerald-300"
-                  : "bg-emerald-100 text-emerald-800"
-              )}
-            >
-              {accountCount} {accountCount === 1 ? "Account" : "Accounts"}
+            <div>
+              <p className={cn("text-sm", isDark ? "text-white/60" : "text-black/60")}>
+                Health Score
+              </p>
+              <div className="flex items-center gap-2 mt-1">
+                <p className={cn("text-3xl font-semibold", getHealthColor(summary.healthScore))}>
+                  {summary.healthScore}
+                </p>
+                <span className="text-xs text-gray-500">/ 100</span>
+              </div>
+            </div>
+            <div>
+              <p className={cn("text-sm", isDark ? "text-white/60" : "text-black/60")}>
+                Trend
+              </p>
+              <div className="flex items-center gap-2 mt-2">
+                {getTrendIcon(summary.trend)}
+                <span className={cn("text-lg font-medium capitalize", isDark ? "text-white" : "text-black")}>
+                  {summary.trend}
+                </span>
+              </div>
             </div>
           </div>
         </div>
+
+        {/* Projections */}
+        {projections && projections.length > 0 && (
+          <div className="mb-6 p-4 rounded-xl border" style={{
+            backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.02)",
+            borderColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"
+          }}>
+            <h2 className={cn("text-sm font-medium mb-3", isDark ? "text-white/70" : "text-black/70")}>
+              Cash Flow Projection
+            </h2>
+            <div className="space-y-2">
+              {projections.map((proj) => (
+                <div key={proj.month} className="flex items-center gap-3">
+                  <span className={cn("text-xs w-16", isDark ? "text-white/60" : "text-black/60")}>
+                    Month {proj.month}
+                  </span>
+                  <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div
+                      className={cn(
+                        "h-full",
+                        proj.confidence === "high" ? "bg-green-500" :
+                        proj.confidence === "medium" ? "bg-yellow-500" : "bg-gray-400"
+                      )}
+                      style={{ width: `${Math.min(100, (proj.projectedBalance / summary.totalBalance) * 100)}%` }}
+                    />
+                  </div>
+                  <span className={cn("text-xs w-24 text-right", isDark ? "text-white" : "text-black")}>
+                    {formatCurrency(proj.projectedBalance)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Account Grid */}
         <div
@@ -356,15 +423,30 @@ export default function AccountBalances() {
           )}
         >
           <AnimatePresence mode="popLayout">
-            {accounts.map((account) => (
-              <AccountCard
-                key={account.account_id}
-                account={account}
-                isExpanded={uiState.expandedAccountIds.includes(account.account_id)}
-                onToggle={() => toggleAccountExpanded(account.account_id)}
-                isDark={isDark}
-              />
-            ))}
+            {accounts.map((account) => {
+              // Map from new AccountOverviewContent format to widget Account interface
+              const mappedAccount: Account = {
+                account_id: account.id,
+                name: account.name,
+                type: account.type,
+                subtype: account.subtype,
+                mask: null,
+                balances: {
+                  current: account.balance,
+                  available: account.available,
+                  iso_currency_code: account.currencyCode
+                }
+              };
+              return (
+                <AccountCard
+                  key={account.id}
+                  account={mappedAccount}
+                  isExpanded={uiState.expandedAccountIds.includes(account.id)}
+                  onToggle={() => toggleAccountExpanded(account.id)}
+                  isDark={isDark}
+                />
+              );
+            })}
           </AnimatePresence>
         </div>
       </div>

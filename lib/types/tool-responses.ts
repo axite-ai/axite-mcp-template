@@ -4,6 +4,7 @@
 
 import type { AccountBase, Transaction } from "plaid";
 import type { MCPToolResponse, OpenAIResponseMetadata } from "./mcp-responses";
+import { z } from "zod";
 
 /**
  * Structured content for account balances
@@ -402,5 +403,283 @@ export interface ConnectItemContent {
 
 export type ConnectItemResponse = MCPToolResponse<
   ConnectItemContent,
+  OpenAIResponseMetadata
+>;
+
+/**
+ * Enhanced structured content for account overview dashboard
+ * Includes trends, projections, and health metrics
+ */
+export interface AccountOverviewContent {
+  summary: {
+    totalBalance: number;
+    accountCount: number;
+    healthScore: number; // 0-100
+    trend: "improving" | "stable" | "declining";
+  };
+  accounts: Array<{
+    id: string;
+    name: string;
+    type: string;
+    subtype: string;
+    balance: number;
+    available: number;
+    currencyCode: string;
+  }>;
+  projections?: Array<{
+    month: number;
+    projectedBalance: number;
+    confidence: "high" | "medium" | "low";
+  }>;
+}
+
+export const AccountOverviewSchema = z.object({
+  summary: z.object({
+    totalBalance: z.number(),
+    accountCount: z.number().int(),
+    healthScore: z.number().int().min(0).max(100),
+    trend: z.enum(["improving", "stable", "declining"]),
+  }),
+  accounts: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      type: z.string(),
+      subtype: z.string(),
+      balance: z.number(),
+      available: z.number(),
+      currencyCode: z.string(),
+    })
+  ),
+  projections: z
+    .array(
+      z.object({
+        month: z.number().int(),
+        projectedBalance: z.number(),
+        confidence: z.enum(["high", "medium", "low"]),
+      })
+    )
+    .optional(),
+});
+
+export type AccountOverviewResponse = MCPToolResponse<
+  AccountOverviewContent,
+  OpenAIResponseMetadata
+>;
+
+/**
+ * Enhanced spending analysis with anomaly detection and comparisons
+ */
+export interface SpendingAnalysisContent {
+  totalSpent: number;
+  topCategories: Array<{
+    category: string;
+    amount: number;
+    transactionCount: number;
+    percentOfTotal: number;
+  }>;
+  trend: "spending_more" | "spending_less" | "consistent";
+  anomalyCount: number;
+  averageTransactionAmount: number;
+  dateRange: {
+    start: string;
+    end: string;
+  };
+}
+
+export const SpendingAnalysisSchema = z.object({
+  totalSpent: z.number(),
+  topCategories: z.array(
+    z.object({
+      category: z.string(),
+      amount: z.number(),
+      transactionCount: z.number().int(),
+      percentOfTotal: z.number(),
+    })
+  ),
+  trend: z.enum(["spending_more", "spending_less", "consistent"]),
+  anomalyCount: z.number().int(),
+  averageTransactionAmount: z.number(),
+  dateRange: z.object({
+    start: z.string(),
+    end: z.string(),
+  }),
+});
+
+export type SpendingAnalysisResponse = MCPToolResponse<
+  SpendingAnalysisContent,
+  OpenAIResponseMetadata
+>;
+
+/**
+ * Recurring payments and subscription tracking
+ */
+export interface RecurringPaymentsContent {
+  monthlyTotal: number;
+  subscriptionCount: number;
+  upcomingPayments: Array<{
+    name: string;
+    amount: number;
+    nextDate: string;
+    frequency: string;
+    confidence?: "high" | "medium" | "low";
+  }>;
+  highestSubscription?: {
+    name: string;
+    amount: number;
+    frequency: string;
+  };
+}
+
+export const RecurringPaymentsSchema = z.object({
+  monthlyTotal: z.number(),
+  subscriptionCount: z.number().int(),
+  upcomingPayments: z.array(
+    z.object({
+      name: z.string(),
+      amount: z.number(),
+      nextDate: z.string(),
+      frequency: z.string(),
+      confidence: z.enum(["high", "medium", "low"]).optional(),
+    })
+  ),
+  highestSubscription: z
+    .object({
+      name: z.string(),
+      amount: z.number(),
+      frequency: z.string(),
+    })
+    .optional(),
+});
+
+export type RecurringPaymentsResponse = MCPToolResponse<
+  RecurringPaymentsContent,
+  OpenAIResponseMetadata
+>;
+
+/**
+ * Business cash flow analysis with runway calculations
+ */
+export interface BusinessCashFlowContent {
+  runway: {
+    months: number;
+    endDate: string;
+    confidence: "high" | "medium" | "critical";
+  };
+  currentPeriod: {
+    revenue: number;
+    expenses: number;
+    net: number;
+    burnRate: number;
+  };
+  projections: Array<{
+    period: string;
+    projectedNet: number;
+    confidence: "high" | "medium" | "low";
+  }>;
+  healthStatus: "positive" | "stable" | "critical";
+}
+
+export const BusinessCashFlowSchema = z.object({
+  runway: z.object({
+    months: z.number(),
+    endDate: z.string(),
+    confidence: z.enum(["high", "medium", "critical"]),
+  }),
+  currentPeriod: z.object({
+    revenue: z.number(),
+    expenses: z.number(),
+    net: z.number(),
+    burnRate: z.number(),
+  }),
+  projections: z.array(
+    z.object({
+      period: z.string(),
+      projectedNet: z.number(),
+      confidence: z.enum(["high", "medium", "low"]),
+    })
+  ),
+  healthStatus: z.enum(["positive", "stable", "critical"]),
+});
+
+export type BusinessCashFlowResponse = MCPToolResponse<
+  BusinessCashFlowContent,
+  OpenAIResponseMetadata
+>;
+
+/**
+ * Smart expense categorization with tax mapping
+ */
+export interface ExpenseCategorizationContent {
+  categorized: number;
+  needsReview: number;
+  taxCategories: Record<string, number>;
+  totalAmount: number;
+}
+
+export const ExpenseCategorizationSchema = z.object({
+  categorized: z.number().int(),
+  needsReview: z.number().int(),
+  taxCategories: z.record(z.string(), z.number()),
+  totalAmount: z.number(),
+});
+
+export type ExpenseCategorizationResponse = MCPToolResponse<
+  ExpenseCategorizationContent,
+  OpenAIResponseMetadata
+>;
+
+
+/**
+ * ACH payment risk assessment
+ */
+export interface PaymentRiskContent {
+  riskScore: {
+    overall: number; // 0-100
+    bankInitiated: number;
+    customerInitiated: number;
+  };
+  recommendation: "proceed" | "review" | "decline";
+  balanceSufficient: boolean | null;
+}
+
+export const PaymentRiskSchema = z.object({
+  riskScore: z.object({
+    overall: z.number().min(0).max(100),
+    bankInitiated: z.number(),
+    customerInitiated: z.number(),
+  }),
+  recommendation: z.enum(["proceed", "review", "decline"]),
+  balanceSufficient: z.boolean().nullable(),
+});
+
+export type PaymentRiskResponse = MCPToolResponse<
+  PaymentRiskContent,
+  OpenAIResponseMetadata
+>;
+
+/**
+ * Enhanced investment portfolio with performance metrics
+ */
+export interface InvestmentPortfolioContent {
+  totalValue: number;
+  totalGainLoss: number;
+  percentReturn: number;
+  accountCount: number;
+  holdingCount: number;
+  assetAllocation?: Record<string, number>;
+}
+
+export const InvestmentPortfolioSchema = z.object({
+  totalValue: z.number(),
+  totalGainLoss: z.number(),
+  percentReturn: z.number(),
+  accountCount: z.number().int(),
+  holdingCount: z.number().int(),
+  assetAllocation: z.record(z.string(), z.number()).optional(),
+});
+
+export type InvestmentPortfolioResponse = MCPToolResponse<
+  InvestmentPortfolioContent,
   OpenAIResponseMetadata
 >;

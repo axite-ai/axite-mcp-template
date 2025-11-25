@@ -666,3 +666,337 @@ export async function getItem(accessToken: string) {
     throw new Error(`Failed to get item: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
+
+/**
+ * Evaluate ACH payment risk using ML-powered predictions
+ * Predicts likelihood of returns/bounces before initiating payments
+ * @param accessToken Plaid access token
+ * @param accountId Account to evaluate
+ * @param amount Payment amount
+ * @param userId User identifier for the payment
+ * @returns Risk scores and recommendation
+ */
+export async function evaluatePaymentRisk(
+  accessToken: string,
+  accountId: string,
+  amount: number,
+  userId: string
+) {
+  try {
+    const response = await getPlaidClient().signalEvaluate({
+      access_token: accessToken,
+      account_id: accountId,
+      client_transaction_id: `txn-${Date.now()}`,
+      amount: amount,
+      user_present: true,
+      client_user_id: userId,
+      is_recurring: false,
+    });
+
+    const scores = response.data.scores;
+
+    if (!scores) {
+      throw new Error("No risk scores returned from Plaid");
+    }
+
+    return {
+      scores: {
+        customerInitiatedReturnRisk: scores.customer_initiated_return_risk?.score ?? 0,
+        bankInitiatedReturnRisk: scores.bank_initiated_return_risk?.score ?? 0,
+      },
+      coreAttributes: response.data.core_attributes,
+    };
+  } catch (error: any) {
+    logPlaidError("signalEvaluate", error);
+    throw new Error(
+      `Failed to evaluate payment risk: ${getPlaidErrorMessage(error)}`
+    );
+  }
+}
+
+/**
+ * Helper: Map Plaid personal_finance_category to tax categories
+ * @param category Plaid category object
+ * @returns Tax category string
+ */
+export function mapToTaxCategory(
+  category: { primary?: string; detailed?: string } | undefined
+): string {
+  if (!category?.primary) return "Other";
+
+  const taxCategoryMap: Record<string, string> = {
+    INCOME: "Income",
+    TRANSFER_IN: "Income - Transfers",
+    TRANSFER_OUT: "Expense - Transfers",
+    LOAN_PAYMENTS: "Loan Payments",
+    BANK_FEES: "Bank Fees & Charges",
+    ENTERTAINMENT: "Entertainment",
+    FOOD_AND_DRINK: "Meals & Entertainment",
+    GENERAL_MERCHANDISE: "Office Supplies & General Merchandise",
+    HOME_IMPROVEMENT: "Repairs & Maintenance",
+    MEDICAL: "Medical & Healthcare",
+    PERSONAL_CARE: "Personal Care",
+    GENERAL_SERVICES: "Professional Services",
+    GOVERNMENT_AND_NON_PROFIT: "Taxes & Government Fees",
+    TRANSPORTATION: "Transportation & Vehicle",
+    TRAVEL: "Travel",
+    RENT_AND_UTILITIES: "Rent & Utilities",
+  };
+
+  return taxCategoryMap[category.primary] || "Other Business Expense";
+}
+
+/**
+ * Helper: Detect spending anomalies using statistical analysis
+ * @param transactions Array of transactions to analyze
+ * @returns Array of anomalies detected
+ */
+export function detectSpendingAnomalies(
+  transactions: Array<{ amount: number; category?: string; date: Date | string; name: string }>
+): Array<{
+  transaction: typeof transactions[number];
+  reason: string;
+  severity: "high" | "medium" | "low";
+}> {
+  const anomalies: Array<{
+    transaction: typeof transactions[number];
+    reason: string;
+    severity: "high" | "medium" | "low";
+  }> = [];
+
+  // Calculate average transaction amount
+  const amounts = transactions.map((t) => t.amount);
+  const avg = amounts.reduce((sum, amt) => sum + amt, 0) / amounts.length;
+  const stdDev = Math.sqrt(
+    amounts.reduce((sum, amt) => sum + Math.pow(amt - avg, 2), 0) /
+      amounts.length
+  );
+
+  // Detect outliers (2+ standard deviations from mean)
+  for (const tx of transactions) {
+    const zScore = Math.abs((tx.amount - avg) / stdDev);
+
+    if (zScore > 3) {
+      anomalies.push({
+        transaction: tx,
+        reason: `Unusually large transaction (${zScore.toFixed(
+          1
+        )}x above average)`,
+        severity: "high",
+      });
+    } else if (zScore > 2) {
+      anomalies.push({
+        transaction: tx,
+        reason: `Higher than typical spending`,
+        severity: "medium",
+      });
+    }
+  }
+
+  // Detect duplicate/suspicious same-day transactions
+  const dateMap = new Map<string, typeof transactions[number]>();
+  for (const tx of transactions) {
+    const dateKey = `${tx.date instanceof Date ? tx.date.toISOString().split('T')[0] : tx.date}-${tx.amount}`;
+    const existing = dateMap.get(dateKey);
+    if (existing) {
+      anomalies.push({
+        transaction: tx,
+        reason: "Potential duplicate transaction on same day",
+        severity: "low",
+      });
+    }
+    dateMap.set(dateKey, tx);
+  }
+
+  return anomalies;
+}
+
+/**
+ * Helper: Calculate account health score (0-100)
+ * @param accounts Array of accounts to evaluate
+ * @param transactions Recent transactions for trend analysis
+ * @returns Health score and trend
+ */
+export function calculateAccountHealthScore(
+  accounts: Array<{
+    type: string;
+    balances: {
+      current: number | null;
+      available: number | null;
+      limit?: number | null;
+    };
+  }>,
+  transactions: Array<{ amount: number; date: Date | string }>
+): {
+  score: number;
+  trend: "improving" | "stable" | "declining";
+  factors: string[];
+} {
+  let score = 100;
+  const factors: string[] = [];
+
+  // Factor 1: Low balances (-20 points)
+  const lowBalanceAccounts = accounts.filter(
+    (acc) =>
+      acc.type === "depository" &&
+      (acc.balances.current || 0) < 100
+  );
+  if (lowBalanceAccounts.length > 0) {
+    score -= 20;
+    factors.push(`${lowBalanceAccounts.length} account(s) with low balance`);
+  }
+
+  // Factor 2: Negative balances (-30 points)
+  const negativeAccounts = accounts.filter(
+    (acc) => (acc.balances.current || 0) < 0
+  );
+  if (negativeAccounts.length > 0) {
+    score -= 30;
+    factors.push(`${negativeAccounts.length} account(s) overdrawn`);
+  }
+
+  // Factor 3: High credit utilization (-25 points)
+  const highUtilization = accounts.filter((acc) => {
+    if (acc.type !== "credit" || !acc.balances.limit) return false;
+    const utilization =
+      (Math.abs(acc.balances.current || 0) / acc.balances.limit) * 100;
+    return utilization > 70;
+  });
+  if (highUtilization.length > 0) {
+    score -= 25;
+    factors.push(`${highUtilization.length} credit account(s) with high utilization`);
+  }
+
+  // Calculate trend from recent transactions
+  const sortedTxns = [...transactions].sort((a, b) => {
+    const dateA = a.date instanceof Date ? a.date : new Date(a.date);
+    const dateB = b.date instanceof Date ? b.date : new Date(b.date);
+    return dateA.getTime() - dateB.getTime();
+  });
+
+  const midpoint = Math.floor(sortedTxns.length / 2);
+  const firstHalf = sortedTxns.slice(0, midpoint);
+  const secondHalf = sortedTxns.slice(midpoint);
+
+  const avgFirst = firstHalf.reduce((sum, t) => sum + t.amount, 0) / firstHalf.length;
+  const avgSecond = secondHalf.reduce((sum, t) => sum + t.amount, 0) / secondHalf.length;
+
+  let trend: "improving" | "stable" | "declining" = "stable";
+  if (avgSecond < avgFirst * 0.9) {
+    trend = "improving"; // Spending less
+  } else if (avgSecond > avgFirst * 1.1) {
+    trend = "declining"; // Spending more
+  }
+
+  return {
+    score: Math.max(0, Math.min(100, score)),
+    trend,
+    factors,
+  };
+}
+
+/**
+ * Helper: Calculate business metrics (runway, burn rate, etc.)
+ * @param accounts Business accounts
+ * @param transactions Recent transactions
+ * @param monthsToProject Number of months to project forward
+ * @returns Business financial metrics
+ */
+export function calculateBusinessMetrics(
+  accounts: Array<{
+    balances: { current: number | null };
+  }>,
+  transactions: Array<{ amount: number; date: Date | string }>,
+  monthsToProject: number = 6
+) {
+  const currentBalance = accounts.reduce(
+    (sum, acc) => sum + (acc.balances.current || 0),
+    0
+  );
+
+  // Separate revenue (negative amounts) vs expenses (positive)
+  const revenue = transactions
+    .filter((t) => t.amount < 0)
+    .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+
+  const expenses = transactions
+    .filter((t) => t.amount > 0)
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const netCashFlow = revenue - expenses;
+  const monthlyBurnRate = expenses / 12; // Approximate monthly
+
+  const runwayMonths =
+    monthlyBurnRate > revenue / 12
+      ? currentBalance / (monthlyBurnRate - revenue / 12)
+      : Infinity;
+
+  // Generate projections
+  const projections = Array.from({ length: monthsToProject }, (_, i) => {
+    const month = i + 1;
+    const projectedBalance =
+      currentBalance - monthlyBurnRate * month + (revenue / 12) * month;
+
+    return {
+      period: `Month ${month}`,
+      projectedNet: Math.round(projectedBalance * 100) / 100,
+      projectedRevenue: Math.round((revenue / 12) * month * 100) / 100,
+      projectedExpenses: Math.round(monthlyBurnRate * month * 100) / 100,
+      confidence: (month <= 3 ? "high" : month <= 6 ? "medium" : "low") as
+        | "high"
+        | "medium"
+        | "low",
+    };
+  });
+
+  return {
+    currentBalance,
+    revenue,
+    expenses,
+    netCashFlow,
+    monthlyBurnRate,
+    runwayMonths: Math.max(0, runwayMonths),
+    projections,
+  };
+}
+
+/**
+ * Helper: Calculate investment performance metrics
+ * @param holdings Current investment holdings
+ * @param transactions Investment transactions for performance calculation
+ * @returns Performance metrics including gains/losses
+ */
+export function calculateInvestmentPerformance(
+  holdings: Array<{
+    cost_basis: number | null;
+    institution_value: number;
+    quantity: number;
+    institution_price: number;
+  }>,
+  transactions?: Array<{
+    amount: number;
+    date: string;
+    type: string;
+  }>
+) {
+  const totalValue = holdings.reduce(
+    (sum, h) => sum + (h.institution_value || h.quantity * h.institution_price),
+    0
+  );
+
+  const totalCostBasis = holdings.reduce(
+    (sum, h) => sum + (h.cost_basis || 0),
+    0
+  );
+
+  const totalGainLoss = totalValue - totalCostBasis;
+  const percentReturn =
+    totalCostBasis > 0 ? (totalGainLoss / totalCostBasis) * 100 : 0;
+
+  return {
+    totalValue: Math.round(totalValue * 100) / 100,
+    totalCostBasis: Math.round(totalCostBasis * 100) / 100,
+    totalGainLoss: Math.round(totalGainLoss * 100) / 100,
+    percentReturn: Math.round(percentReturn * 100) / 100,
+  };
+}
