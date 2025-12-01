@@ -171,7 +171,7 @@ export default function Transactions() {
 
   // Show loading skeleton during initial load
   if (!toolOutput) {
-    return <WidgetLoadingSkeleton />;
+    return <WidgetLoadingSkeleton className="min-h-[400px]" />;
   }
 
   const authComponent = checkWidgetAuth(toolOutput);
@@ -188,7 +188,10 @@ export default function Transactions() {
 
   return (
     <div
-      className={`antialiased w-full relative bg-transparent text-default ${!isFullscreen ? "overflow-hidden" : ""}`}
+      className={cn(
+        "antialiased w-full relative bg-transparent text-default",
+        !isFullscreen && "overflow-hidden"
+      )}
       style={{
         maxHeight: maxHeight ?? undefined,
         height: isFullscreen ? maxHeight ?? undefined : undefined,
@@ -207,8 +210,8 @@ export default function Transactions() {
         </Button>
       )}
 
-      <div className={`w-full h-full overflow-y-auto ${isFullscreen ? "p-8" : "p-0"}`}>
-        {/* Header */}
+      <div className={cn("w-full h-full overflow-y-auto", isFullscreen ? "p-8" : "p-0")}>
+        {/* Header - Only show full header in fullscreen */}
         <div className="mb-6">
           <h1 className="heading-lg mb-2">
             Transactions
@@ -220,11 +223,9 @@ export default function Transactions() {
           )}
         </div>
 
-        {/* Summary Cards */}
-        {metadata && (
-          <div
-            className={`grid gap-4 mb-6 ${isFullscreen ? "grid-cols-2 md:grid-cols-4" : "grid-cols-2"}`}
-          >
+        {/* Summary Cards - Only show in fullscreen */}
+        {isFullscreen && metadata && (
+          <div className="grid gap-4 mb-6 grid-cols-2 md:grid-cols-4">
             <div className="rounded-2xl border-none bg-success-soft p-4">
               <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 rounded-lg bg-success-surface text-success-soft">
@@ -286,8 +287,8 @@ export default function Transactions() {
           </div>
         )}
 
-        {/* Filters */}
-        {metadata && (
+        {/* Filters - Only show in fullscreen */}
+        {isFullscreen && metadata && (
           <div className="mb-6 space-y-3">
             <Input
               placeholder="Search..."
@@ -346,7 +347,11 @@ export default function Transactions() {
                   </h3>
                 </div>
 
-                <div className="border border-subtle rounded-xl overflow-hidden bg-surface shadow-sm">
+                <div className={cn(
+                  "rounded-xl overflow-hidden bg-surface",
+                  // Only show border in fullscreen to match minimal style for inline
+                  isFullscreen && "border border-subtle shadow-sm"
+                )}>
                   <AnimateLayoutGroup>
                     {(isFullscreen || expandedDateGroupsSet.has(date) ? txs : txs.slice(0, MAX_VISIBLE_INLINE)).map((tx, index) => {
                       const isExpanded = uiState.expandedTx === tx.transaction_id;
@@ -361,11 +366,14 @@ export default function Transactions() {
                           key={tx.transaction_id}
                           className={cn(
                             "cursor-pointer hover:bg-surface-secondary/50 transition-colors",
-                            index !== 0 && "border-t border-subtle"
+                            // In inline mode, no internal borders for cleaner look
+                            (isFullscreen && index !== 0) && "border-t border-subtle",
+                            // In inline mode, add subtle spacing between items instead of border
+                            (!isFullscreen) && "mb-2 last:mb-0 rounded-lg"
                           )}
                           onClick={() => setUiState(s => ({...s, expandedTx: isExpanded ? null : tx.transaction_id}))}
                         >
-                          <div className="p-3 flex items-center justify-between gap-3">
+                          <div className={cn("p-3 flex items-center justify-between gap-3", !isFullscreen && "bg-surface-secondary/30 rounded-lg")}>
                             <div className="flex items-center gap-3 min-w-0">
                               <div className="w-10 h-10 rounded-full bg-surface-secondary flex items-center justify-center text-lg flex-shrink-0 border border-subtle overflow-hidden">
                                 {logo ? (
@@ -458,9 +466,11 @@ export default function Transactions() {
           </div>
         )}
 
-        <div className="mt-6 text-center text-sm text-secondary">
-          Showing {filteredTransactions.length} of {toolOutput?.totalTransactions ?? transactions.length} transactions
-        </div>
+        {isFullscreen && (
+          <div className="mt-6 text-center text-sm text-secondary">
+            Showing {filteredTransactions.length} of {toolOutput?.totalTransactions ?? transactions.length} transactions
+          </div>
+        )}
       </div>
     </div>
   );

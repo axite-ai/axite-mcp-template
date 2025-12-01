@@ -110,79 +110,76 @@ export default function RecurringPaymentsWidget() {
           </p>
         </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <AnimateLayout>
-            <div key="active-subscriptions" className="bg-surface rounded-2xl border border-subtle p-4 shadow-hairline">
+        {/* Summary Cards - Only shown in fullscreen for detailed view */}
+        {isFullscreen && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="bg-surface rounded-lg border border-subtle p-4">
               <div className="text-sm text-secondary mb-1">Active Subscriptions</div>
               <div className="text-2xl font-bold text-success">{subscriptionCount}</div>
               <div className="text-xs text-tertiary mt-1">
                 {formatCurrency(monthlyTotal / subscriptionCount || 0)} avg/month
               </div>
             </div>
-          </AnimateLayout>
 
-          <AnimateLayout>
-            <div key="monthly-total" className="bg-surface rounded-2xl border border-subtle p-4 shadow-hairline">
+            <div className="bg-surface rounded-lg border border-subtle p-4">
               <div className="text-sm text-secondary mb-1">Monthly Total</div>
               <div className="text-2xl font-bold text-info">{formatCurrency(monthlyTotal)}</div>
               <div className="text-xs text-tertiary mt-1">
                 {formatCurrency(monthlyTotal * 12)}/year projected
               </div>
             </div>
-          </AnimateLayout>
 
-          <AnimateLayout>
-            <div key="highest-subscription" className="bg-surface rounded-2xl border border-subtle p-4 shadow-hairline">
+            <div className="bg-surface rounded-lg border border-subtle p-4">
               <div className="text-sm text-secondary mb-1">Highest Subscription</div>
               <div className="text-2xl font-bold text-discovery">
                 {formatCurrency(highestSubscription?.amount ?? 0)}
               </div>
               <div className="text-xs text-tertiary mt-1 truncate">{highestSubscription?.name ?? 'N/A'}</div>
             </div>
-          </AnimateLayout>
-        </div>
-
-        {/* Filters */}
-        <div className="flex gap-4 items-center mb-4">
-          <div className="w-40">
-            <Select
-              value={filterStatus}
-              onChange={(val: any) => setFilterStatus(val.value)}
-              options={[
-                { value: "all", label: "All Payments" },
-                { value: "active", label: "Active Only" },
-                { value: "inactive", label: "Inactive Only" }
-              ]}
-              size="sm"
-            />
           </div>
+        )}
 
-          <div className="w-40">
-            <Select
-              value={sortBy}
-              onChange={(val: any) => setSortBy(val.value)}
-              options={[
-                { value: "amount", label: "Sort by Amount" },
-                { value: "date", label: "Sort by Date" },
-                { value: "merchant", label: "Sort by Merchant" }
-              ]}
-              size="sm"
-            />
+        {/* Filters - Only shown in fullscreen */}
+        {isFullscreen && (
+          <div className="flex gap-4 items-center mb-4">
+            <div className="w-40">
+              <Select
+                value={filterStatus}
+                onChange={(val: any) => setFilterStatus(val.value)}
+                options={[
+                  { value: "all", label: "All Payments" },
+                  { value: "active", label: "Active Only" },
+                  { value: "inactive", label: "Inactive Only" }
+                ]}
+                size="sm"
+              />
+            </div>
+
+            <div className="w-40">
+              <Select
+                value={sortBy}
+                onChange={(val: any) => setSortBy(val.value)}
+                options={[
+                  { value: "amount", label: "Sort by Amount" },
+                  { value: "date", label: "Sort by Date" },
+                  { value: "merchant", label: "Sort by Merchant" }
+                ]}
+                size="sm"
+              />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Streams List */}
-        <div className="border border-subtle rounded-xl overflow-hidden bg-surface shadow-sm">
-          {sortedStreams.map((stream: any, idx: number) => (
+        <div className={cn("overflow-hidden", !isFullscreen && "rounded-xl border border-subtle")}>
+          {(isFullscreen ? sortedStreams : sortedStreams.slice(0, 5)).map((stream: any, idx: number) => (
             <div
               key={stream.streamId || idx}
               className={cn(
-                "p-4 hover:bg-surface-secondary/50 transition-colors",
+                "p-3 hover:bg-surface-secondary/50 transition-colors flex items-center justify-between gap-4",
                 idx !== 0 && "border-t border-subtle"
               )}
             >
-              <div className="flex items-center justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
                     <h3 className="font-medium text-sm text-default truncate">{stream.name}</h3>
@@ -207,7 +204,6 @@ export default function RecurringPaymentsWidget() {
                     {formatCurrency(stream.amount)}
                   </div>
                 </div>
-              </div>
             </div>
           ))}
         </div>

@@ -139,117 +139,136 @@ export default function SubscriptionRequired() {
       )}
       style={{
         maxHeight: maxHeight ?? undefined,
-        height: isFullscreen ? "100%" : "auto",
-        minHeight: isFullscreen ? "100vh" : undefined,
+        height: isFullscreen ? "100%" : 400,
+        minHeight: isFullscreen ? "100vh" : 400,
       }}
     >
-      <div className={cn("w-full max-w-3xl mx-auto flex-1 flex flex-col", isFullscreen ? "p-6 md:p-8" : "p-0")}>
-
+      <div
+        className={cn(
+          "w-full h-full mx-auto flex-1 flex flex-col overflow-y-auto",
+          isFullscreen ? "p-6 md:p-8 max-w-3xl" : "p-6 max-w-md"
+        )}
+      >
         {/* Header Section */}
-        <div className="mb-6 text-center sm:text-left">
+        <div className="mb-6 text-center">
           <div className="inline-flex items-center gap-2 mb-3 px-3 py-1 rounded-full bg-info-surface text-info border border-info-surface">
             <Lock className="h-3.5 w-3.5" />
-            <span className="text-xs font-medium uppercase tracking-wide">Subscription Required</span>
+            <span className="text-xs font-medium uppercase tracking-wide">
+              Subscription Required
+            </span>
           </div>
-          <h1 className="heading-xl mb-3">
-            Unlock {featureName}
-          </h1>
-          <p className="text-secondary text-md max-w-lg mx-auto sm:mx-0">
-            Choose the plan that fits your financial journey. Upgrade anytime to access advanced features and higher limits.
+          <h1 className="heading-xl mb-3">Unlock {featureName}</h1>
+          <p className="text-secondary text-md max-w-lg mx-auto">
+            Choose the plan that fits your financial journey. Upgrade anytime to
+            access advanced features and higher limits.
           </p>
         </div>
 
         {/* Error Alert */}
         {error && (
-          <div className="mb-6">
-            <Alert
-              variant="soft"
-              color="danger"
-              description={error}
-            />
+          <div className="mb-6 w-full">
+            <Alert variant="soft" color="danger" description={error} />
           </div>
         )}
 
         {/* Plan Selection - Radio Group */}
-        <RadioGroup
-          value={selectedPlan}
-          onChange={setSelectedPlan}
-          className="flex flex-col gap-4 mb-8"
-          aria-label="Select a subscription plan"
-        >
-          {PLANS.map((plan) => {
-            const isSelected = selectedPlan === plan.id;
-            return (
-              <RadioGroup.Item
-                key={plan.id}
-                value={plan.id}
-                className={cn(
-                  "group relative flex flex-col sm:flex-row items-start sm:items-center gap-4 p-5 rounded-xl border transition-all cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary",
-                  isSelected
-                    ? "border-primary bg-surface-secondary shadow-sm"
-                    : "border-default bg-surface hover:border-subtle hover:bg-surface-secondary"
-                )}
-              >
-                {/* Custom Radio Indicator */}
-                <div className="mt-1 sm:mt-0 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-default group-data-[state=checked]:border-primary group-data-[state=checked]:bg-primary transition-colors">
-                  <div className="h-2 w-2 rounded-full bg-surface opacity-0 group-data-[state=checked]:opacity-100 transition-opacity" />
-                </div>
-
-                {/* Card Content */}
-                <div className="flex-1 w-full">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3 sm:mb-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-lg">
-                        {plan.name}
-                      </h3>
-                      {plan.popular && (
-                        <Badge color="discovery" size="sm" pill className="gap-1 shadow-sm">
-                          <Sparkle className="h-3 w-3" />
-                          Popular
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="text-left sm:text-right flex items-baseline gap-1">
-                      <span className="text-xl font-bold">{plan.price}</span>
-                      <span className="text-secondary text-sm">/{plan.interval}</span>
-                    </div>
+        {isFullscreen && (
+          <RadioGroup
+            value={selectedPlan}
+            onChange={setSelectedPlan}
+            className="flex flex-col gap-4 mb-8 w-full"
+            aria-label="Select a subscription plan"
+          >
+            {PLANS.map((plan) => {
+              const isSelected = selectedPlan === plan.id;
+              return (
+                <RadioGroup.Item
+                  key={plan.id}
+                  value={plan.id}
+                  className={cn(
+                    "group relative flex flex-col sm:flex-row items-start sm:items-center gap-4 p-5 rounded-xl border transition-all cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                    isSelected
+                      ? "border-primary bg-surface-secondary shadow-sm"
+                      : "border-default bg-surface hover:border-subtle hover:bg-surface-secondary"
+                  )}
+                >
+                  {/* Custom Radio Indicator */}
+                  <div className="mt-1 sm:mt-0 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-default group-data-[state=checked]:border-primary group-data-[state=checked]:bg-primary transition-colors">
+                    <div className="h-2 w-2 rounded-full bg-surface opacity-0 group-data-[state=checked]:opacity-100 transition-opacity" />
                   </div>
 
-                  {plan.trial && (
-                    <div className="mb-3">
-                      <span className="text-xs font-medium text-info bg-info-surface px-2 py-0.5 rounded-full border border-info-surface">
-                        {plan.trial}
-                      </span>
+                  {/* Card Content */}
+                  <div className="flex-1 w-full">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3 sm:mb-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-lg">{plan.name}</h3>
+                        {plan.popular && (
+                          <Badge
+                            color="discovery"
+                            size="sm"
+                            pill
+                            className="gap-1 shadow-sm"
+                          >
+                            <Sparkle className="h-3 w-3" />
+                            Popular
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="text-left sm:text-right flex items-baseline gap-1">
+                        <span className="text-xl font-bold">{plan.price}</span>
+                        <span className="text-secondary text-sm">
+                          /{plan.interval}
+                        </span>
+                      </div>
                     </div>
-                  )}
 
-                  <AnimateLayout>
-                    {isSelected && (
-                      <div key="features" className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 mt-3 pt-3 border-t border-subtle/50">
-                        {plan.features.map((feature, i) => (
-                          <div key={i} className="flex items-start gap-2 text-sm text-secondary">
-                            <Check className="h-4 w-4 text-success flex-shrink-0 mt-0.5" />
-                            <span className="leading-tight">{feature}</span>
-                          </div>
-                        ))}
+                    {plan.trial && (
+                      <div className="mb-3">
+                        <span className="text-xs font-medium text-info bg-info-surface px-2 py-0.5 rounded-full border border-info-surface">
+                          {plan.trial}
+                        </span>
                       </div>
                     )}
-                  </AnimateLayout>
 
-                  {/* Summary for unselected items (mobile/compact view mainly) */}
-                  {!isSelected && (
-                     <p className="text-sm text-tertiary mt-1 line-clamp-1">
+                    <AnimateLayout>
+                      {isSelected && (
+                        <div
+                          key="features"
+                          className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 mt-3 pt-3 border-t border-subtle/50"
+                        >
+                          {plan.features.map((feature, i) => (
+                            <div
+                              key={i}
+                              className="flex items-start gap-2 text-sm text-secondary"
+                            >
+                              <Check className="h-4 w-4 text-success flex-shrink-0 mt-0.5" />
+                              <span className="leading-tight">{feature}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </AnimateLayout>
+
+                    {/* Summary for unselected items (mobile/compact view mainly) */}
+                    {!isSelected && (
+                      <p className="text-sm text-tertiary mt-1 line-clamp-1">
                         {plan.features.slice(0, 3).join(" • ")}...
-                     </p>
-                  )}
-                </div>
-              </RadioGroup.Item>
-            );
-          })}
-        </RadioGroup>
+                      </p>
+                    )}
+                  </div>
+                </RadioGroup.Item>
+              );
+            })}
+          </RadioGroup>
+        )}
 
         {/* Sticky Footer Action */}
-        <div className="mt-auto pt-6 border-t border-subtle">
+        <div
+          className={cn(
+            "mt-auto pt-6 w-full",
+            isFullscreen && "border-t border-subtle"
+          )}
+        >
           <Button
             size="xl"
             variant="solid"
@@ -263,16 +282,15 @@ export default function SubscriptionRequired() {
             {isLoading
               ? "Processing..."
               : selectedPlanDetails?.trial
-                ? `Start ${selectedPlanDetails.trial}`
-                : `Subscribe to ${selectedPlanDetails?.name || "Plan"}`
-            }
+              ? `Start ${selectedPlanDetails.trial}`
+              : `Subscribe to ${selectedPlanDetails?.name || "Plan"}`}
           </Button>
 
           <p className="text-center text-xs text-tertiary">
-            Secure payment via Stripe. You can cancel anytime from your account settings.
+            Secure payment via Stripe. You can cancel anytime from your account
+            settings.
           </p>
         </div>
-
       </div>
     </div>
   );

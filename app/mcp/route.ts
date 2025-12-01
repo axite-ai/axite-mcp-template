@@ -1152,6 +1152,10 @@ const handler = withMcpAuth(auth, async (req, session) => {
           "openai/toolInvocation/invoking": "Loading subscription management...",
           "openai/toolInvocation/invoked": "Subscription management ready",
           "openai/widgetAccessible": true,
+          "openai/widgetCSP": {
+            connect_domains: ["https://billing.stripe.com"],
+            resource_domains: [],
+          },
         },
         annotations: {
           destructiveHint: false,

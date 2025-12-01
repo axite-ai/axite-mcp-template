@@ -142,6 +142,9 @@ function DonutChart({
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
 
+  // Calculate total absolute amount to ensure percentages sum to 100 correctly for visual representation
+  const totalAmount = categories.reduce((sum, cat) => sum + Math.abs(cat.amount), 0);
+
   let accumulatedPercentage = 0;
 
   return (
@@ -159,10 +162,30 @@ function DonutChart({
 
         {/* Category segments */}
         {categories.map((category, index) => {
-          const percentage = category.percentage;
-          const offset =
-            circumference - (accumulatedPercentage / 100) * circumference;
-          const dashArray = `${(percentage / 100) * circumference} ${circumference}`;
+          // Re-calculate percentage based on local total to ensure segments fit perfectly
+          const percentage = (Math.abs(category.amount) / totalAmount) * 100;
+
+          // SVG stroke-dasharray pattern: length of dash, length of gap
+          // We need gap to be circumference to ensure it doesn't repeat
+          const dashLength = (percentage / 100) * circumference;
+          const gapLength = circumference; // Ensure gap is large enough
+          const dashArray = `${dashLength} ${gapLength}`;
+
+          // Stroke dashoffset determines where the dash starts
+          // We start from 0 (at -90deg due to rotation) and offset backwards by accumulated amount
+          const currentOffset = (accumulatedPercentage / 100) * circumference;
+          // In SVG, positive offset moves start point counter-clockwise (which looks like backwards in our rotated view)
+          // We want to "push" the start point back by the accumulated amount so it starts where previous ended
+          // stroke-dashoffset is subtracted from the path start.
+          // Since we rotate -90deg, 0 is at top.
+          // Increasing offset moves the dash "backwards" along the path.
+          // But wait, the standard trick is: dashoffset = circumference - current_value? No, that's for "filling up" animations.
+          // For stacked segments:
+          // Segment 1 starts at 0.
+          // Segment 2 starts at (percentage1).
+          // We achieve this by setting dashoffset to -accumulated_length.
+
+          const offset = -1 * ((accumulatedPercentage / 100) * circumference);
 
           accumulatedPercentage += percentage;
 
@@ -176,8 +199,8 @@ function DonutChart({
               stroke={category.color.from}
               strokeWidth={strokeWidth}
               strokeDasharray={dashArray}
-              strokeDashoffset={offset}
-              initial={{ strokeDashoffset: circumference }}
+              // strokeDashoffset needs to be negative to shift the start point clockwise
+              initial={{ strokeDashoffset: 0 }}
               animate={{ strokeDashoffset: offset }}
               transition={{ duration: 0.8, ease: "easeOut", delay: index * 0.1 }}
               className={cn(
@@ -282,7 +305,7 @@ export default function SpendingInsights() {
 
       {/* Content */}
       <div
-        className={`w-full h-full overflow-y-auto ${isFullscreen ? "p-8" : "p-0"}`}
+        className={`w-full h-full overflow-y-auto ${isFullscreen ? "p-8" : "p-5"}`}
       >
         {/* Header */}
         <div className="mb-6">
@@ -298,22 +321,24 @@ export default function SpendingInsights() {
         </div>
 
         {/* Layout: Chart + Categories */}
-        <div className="flex flex-col gap-6">
-          {/* Donut Chart - Always visible but optimized for sizes */}
-          <div className="flex justify-center py-2">
-            <DonutChart
-              categories={categoriesWithMetadata}
-              totalSpending={totalSpending}
-              selectedIndex={uiState.selectedIndex}
-              onSelectCategory={(index) =>
-                setUiState(s => ({ ...s, selectedIndex: s.selectedIndex === index ? null : index }))
-              }
-            />
+        <div className={cn("flex gap-4", isFullscreen ? "flex-col" : "flex-row items-center")}>
+          {/* Donut Chart */}
+          <div className={cn("flex justify-center py-2 shrink-0", !isFullscreen && "w-[45%]")}>
+            <div className={cn("relative", !isFullscreen && "scale-75 origin-center")}>
+              <DonutChart
+                categories={categoriesWithMetadata}
+                totalSpending={totalSpending}
+                selectedIndex={uiState.selectedIndex}
+                onSelectCategory={(index) =>
+                  setUiState(s => ({ ...s, selectedIndex: s.selectedIndex === index ? null : index }))
+                }
+              />
+            </div>
           </div>
 
           {/* Categories List */}
-          <div className="space-y-2">
-            {categoriesWithMetadata.map((category, index) => (
+          <div className={cn("space-y-2 min-w-0", !isFullscreen && "flex-1")}>
+            {(isFullscreen ? categoriesWithMetadata : categoriesWithMetadata.slice(0, 4)).map((category, index) => (
               <CategoryBar
                 key={category.category}
                 category={category}

@@ -86,19 +86,31 @@ export default function ManageSubscription() {
           height: isFullscreen ? maxHeight ?? undefined : undefined,
         }}
       >
-        <div className={cn("w-full h-full overflow-y-auto", isFullscreen ? "p-8" : "p-5")}>
+        <div
+          className={cn(
+            "w-full h-full overflow-y-auto",
+            isFullscreen ? "p-8" : "p-5"
+          )}
+        >
           <AnimateLayout>
-            <div key="error-config" className="rounded-2xl border p-6 shadow-hairline bg-danger-soft border-danger-surface">
+            <div
+              key="error-config"
+              className="rounded-2xl border p-6 shadow-hairline bg-danger-soft border-danger-surface"
+            >
               <div className="flex items-start gap-4">
                 <div className="p-3 rounded-xl flex items-center justify-center flex-shrink-0 bg-danger-surface">
-                  <CloseBold strokeWidth={1.5} className="h-6 w-6 text-danger" />
+                  <CloseBold
+                    strokeWidth={1.5}
+                    className="h-6 w-6 text-danger"
+                  />
                 </div>
                 <div className="flex-1">
                   <h2 className="text-xl font-semibold mb-2 text-danger">
                     Configuration Error
                   </h2>
                   <p className="text-sm text-danger-soft">
-                    Billing portal is not configured. Please contact support for assistance.
+                    Billing portal is not configured. Please contact support for
+                    assistance.
                   </p>
                 </div>
               </div>
@@ -117,13 +129,16 @@ export default function ManageSubscription() {
       )}
       style={{
         maxHeight: maxHeight ?? undefined,
-        height: isFullscreen ? maxHeight ?? undefined : undefined,
+        height: isFullscreen ? maxHeight ?? undefined : 400,
+        minHeight: isFullscreen ? undefined : 400,
       }}
     >
       {/* Expand button (inline mode only) */}
       {!isFullscreen && (
         <Button
-          onClick={() => window.openai?.requestDisplayMode({ mode: "fullscreen" })}
+          onClick={() =>
+            window.openai?.requestDisplayMode({ mode: "fullscreen" })
+          }
           variant="ghost"
           color="secondary"
           size="sm"
@@ -135,84 +150,96 @@ export default function ManageSubscription() {
       )}
 
       {/* Content */}
-      <div className={cn("w-full h-full overflow-y-auto", isFullscreen ? "p-8" : "p-0")}>
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="heading-lg mb-2">
-            Manage Subscription
-          </h1>
-          <p className="text-sm text-secondary">
-            Update your plan, payment methods, or billing information
-          </p>
-        </div>
-
+      <div
+        className={cn(
+          "w-full h-full overflow-y-auto flex flex-col items-center justify-center",
+          isFullscreen ? "p-8" : "p-6"
+        )}
+      >
         {/* Main Card */}
         <AnimateLayout>
-          <div key="manage-sub-content" className="rounded-2xl border border-subtle p-6 shadow-hairline bg-surface">
+          <div
+            key="manage-sub-content"
+            className={cn(
+              "w-full max-w-md mx-auto text-center flex flex-col items-center",
+              isFullscreen && "items-start text-left max-w-2xl"
+            )}
+          >
             {/* Header with Icon */}
-            <div className="flex items-start gap-4 mb-6">
-              <div className="p-3 rounded-xl flex items-center justify-center flex-shrink-0 bg-discovery-solid text-white">
-                <Settings strokeWidth={1.5} className="h-6 w-6" />
+            <div
+              className={cn(
+                "mb-6 flex flex-col items-center",
+                isFullscreen && "flex-row items-start gap-6"
+              )}
+            >
+              <div className="p-4 rounded-2xl flex items-center justify-center flex-shrink-0 bg-discovery-solid text-white mb-4">
+                <Settings strokeWidth={1.5} className="h-8 w-8" />
               </div>
               <div className="flex-1">
-                <h2 className="text-xl font-semibold mb-1 text-default">
-                  Manage Your Subscription
+                <h2 className="heading-xl mb-2 text-default">
+                  Manage Subscription
                 </h2>
-                <p className="text-sm text-secondary">
+                <p className="text-md text-secondary max-w-sm mx-auto">
                   Update your plan, payment methods, or billing information
                 </p>
               </div>
             </div>
 
-            {/* Current Plan Badge */}
-            {currentPlan && (
-              <div className="mb-6 p-4 rounded-xl border bg-info-soft border-info-surface">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-info">
-                    Current Plan
-                  </span>
-                  <Badge color="info" size="lg" pill>
-                    {currentPlan}
-                  </Badge>
+            {isFullscreen && (
+              <div className="w-full">
+                {/* Current Plan Badge */}
+                {currentPlan && (
+                  <div className="mb-6 p-4 rounded-xl border bg-info-soft border-info-surface w-full">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-info">
+                        Current Plan
+                      </span>
+                      <Badge color="info" size="lg" pill>
+                        {currentPlan}
+                      </Badge>
+                    </div>
+                  </div>
+                )}
+
+                {/* Features List */}
+                <div className="mb-8 space-y-3 w-full">
+                  {features.map((feature, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="flex items-start gap-3"
+                    >
+                      <div className="p-2 rounded-lg flex items-center justify-center flex-shrink-0 bg-success-soft text-success">
+                        <feature.icon strokeWidth={1.5} className="h-4 w-4" />
+                      </div>
+                      <p className="text-sm pt-1 text-secondary">
+                        {feature.text}
+                      </p>
+                    </motion.div>
+                  ))}
                 </div>
               </div>
             )}
 
-            {/* Features List */}
-            <div className="mb-6 space-y-3">
-              {features.map((feature, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="flex items-start gap-3"
-                >
-                  <div className="p-2 rounded-lg flex items-center justify-center flex-shrink-0 bg-success-soft text-success">
-                    <feature.icon strokeWidth={1.5} className="h-4 w-4" />
-                  </div>
-                  <p className="text-sm pt-1 text-secondary">
-                    {feature.text}
-                  </p>
-                </motion.div>
-              ))}
-            </div>
-
             {/* CTA Button */}
-            <Button
-              onClick={handleManageSubscription}
-              color="primary"
-              size="xl"
-              block
-            >
-              Open Billing Portal
-              <LinkExternalWebsite className="ml-2 h-4 w-4" />
-            </Button>
+            <div className="w-full max-w-xs mx-auto">
+              <Button
+                onClick={handleManageSubscription}
+                color="primary"
+                size="xl"
+                block
+              >
+                Open Billing Portal
+                <LinkExternalWebsite className="ml-2 h-4 w-4" />
+              </Button>
 
-            {/* Footer Note */}
-            <p className="text-xs text-center mt-4 text-tertiary">
-              Secure billing portal powered by Stripe
-            </p>
+              {/* Footer Note */}
+              <p className="text-xs text-center mt-4 text-tertiary">
+                Secure billing portal powered by Stripe
+              </p>
+            </div>
           </div>
         </AnimateLayout>
       </div>
