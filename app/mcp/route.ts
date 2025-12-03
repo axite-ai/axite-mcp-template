@@ -68,8 +68,9 @@ import {
 import { withMcpAuth } from "better-auth/plugins";
 import { baseURL } from "@/baseUrl";
 import { logOAuthRequest, logOAuthError } from "@/lib/auth/oauth-logger";
+import { logger } from "@/lib/services/logger-service";
 
-console.log("Auth API methods at startup:", Object.keys(auth.api));
+logger.debug("Auth API methods at startup:", { methods: Object.keys(auth.api) });
 
 // Helper to fetch HTML from Next.js pages (Vercel template pattern)
 const getAppsSdkCompatibleHtml = async (baseUrl: string, path: string) => {
@@ -82,7 +83,7 @@ const getAppsSdkCompatibleHtml = async (baseUrl: string, path: string) => {
 
 const handler = withMcpAuth(auth, async (req, session) => {
   // Detailed session logging
-  console.log("[MCP] Session received:", {
+  logger.debug("[MCP] Session received:", {
     hasSession: !!session,
     userId: session?.userId,
     clientId: session?.clientId,
@@ -94,7 +95,7 @@ const handler = withMcpAuth(auth, async (req, session) => {
   // Log the request details
   const url = new URL(req.url);
   const authHeader = req.headers.get('authorization');
-  console.log("[MCP] Request details:", {
+  logger.debug("[MCP] Request details:", {
     method: req.method,
     path: url.pathname,
     searchParams: Object.fromEntries(url.searchParams),
@@ -108,7 +109,7 @@ const handler = withMcpAuth(auth, async (req, session) => {
     const body = await clonedReq.text();
     if (body) {
       const parsed = JSON.parse(body);
-      console.log("[MCP] Request body:", {
+      logger.debug("[MCP] Request body:", {
         method: parsed.method,
         id: parsed.id,
         paramsKeys: parsed.params ? Object.keys(parsed.params) : [],
@@ -133,7 +134,6 @@ const handler = withMcpAuth(auth, async (req, session) => {
       { id: 'recurring-payments', title: 'Recurring Payments Widget', description: 'Track subscriptions and recurring charges with upcoming payment predictions', path: '/widgets/recurring-payments' },
       { id: 'business-cashflow', title: 'Business Cash Flow Widget', description: 'Runway calculator and burn rate analysis for businesses', path: '/widgets/business-cashflow' },
       { id: 'expense-categorizer', title: 'Expense Categorizer Widget', description: 'Smart expense categorization with tax category mapping', path: '/widgets/expense-categorizer' },
-      { id: '2fa-required', title: 'Set Up Two-Factor Authentication', description: 'Complete 2FA setup to access sensitive features', path: '/widgets/2fa-required' },
       { id: 'plaid-required', title: 'Connect Bank Account', description: 'Prompts user to connect their bank account via Plaid', path: '/widgets/plaid-required' },
       { id: 'subscription-required', title: 'Choose Subscription Plan', description: 'Select and subscribe to a plan to unlock features', path: '/widgets/subscription-required' },
       { id: 'manage-subscription', title: 'Manage Subscription', description: 'Update or cancel your subscription', path: '/widgets/manage-subscription' },
@@ -182,7 +182,7 @@ const handler = withMcpAuth(auth, async (req, session) => {
           };
         }
       );
-      console.log(`[MCP] Registered widget: ${widget.id} (fetches from ${widget.path})`);
+      logger.debug(`[MCP] Registered widget: ${widget.id} (fetches from ${widget.path})`);
     }
 
     // ============================================================================
@@ -210,7 +210,7 @@ const handler = withMcpAuth(auth, async (req, session) => {
       securitySchemes: [{ type: "oauth2" }],
     };
 
-    console.log("[MCP] Registering tool: get_account_balances", {
+    logger.debug("[MCP] Registering tool: get_account_balances", {
       securitySchemes: getAccountBalancesConfig.securitySchemes,
       annotations: getAccountBalancesConfig.annotations,
     });
@@ -334,7 +334,7 @@ const handler = withMcpAuth(auth, async (req, session) => {
           metaForWidget
         );
       } catch (error) {
-        console.error("[Tool] get_account_balances error", { error });
+        logger.error("[Tool] get_account_balances error", { error });
         return createErrorResponse(
           error instanceof Error ? error.message : "Failed to fetch account overview"
         );
@@ -554,7 +554,7 @@ const handler = withMcpAuth(auth, async (req, session) => {
           metaForWidget
         );
       } catch (error) {
-        console.error("[Tool] get_transactions error", { error });
+        logger.error("[Tool] get_transactions error", { error });
         return createErrorResponse(
           error instanceof Error ? error.message : "Failed to fetch transactions"
         );
@@ -738,7 +738,7 @@ const handler = withMcpAuth(auth, async (req, session) => {
           metaForWidget
         );
       } catch (error) {
-        console.error("[Tool] get_spending_insights error", { error });
+        logger.error("[Tool] get_spending_insights error", { error });
         return createErrorResponse(
           error instanceof Error ? error.message : "Failed to analyze spending"
         );
@@ -813,7 +813,7 @@ const handler = withMcpAuth(auth, async (req, session) => {
           output
         );
       } catch (error) {
-        console.error("[Tool] check_account_health error", { error });
+        logger.error("[Tool] check_account_health error", { error });
         return createErrorResponse(
           error instanceof Error ? error.message : "Failed to check account health"
         );
@@ -958,7 +958,7 @@ const handler = withMcpAuth(auth, async (req, session) => {
           metaForWidget
         );
       } catch (error) {
-        console.error("[Tool] get_investment_holdings error", { error });
+        logger.error("[Tool] get_investment_holdings error", { error });
         return createErrorResponse(
           error instanceof Error ? error.message : "Failed to fetch investment portfolio"
         );
@@ -1132,7 +1132,7 @@ const handler = withMcpAuth(auth, async (req, session) => {
           metaForWidget
         );
       } catch (error) {
-        console.error("[Tool] get_liabilities error", { error });
+        logger.error("[Tool] get_liabilities error", { error });
         return createErrorResponse(
           error instanceof Error ? error.message : "Failed to fetch liabilities"
         );
@@ -1225,7 +1225,7 @@ const handler = withMcpAuth(auth, async (req, session) => {
             }
           );
         } catch (error) {
-          console.error("[Tool] manage_subscription error", { error });
+          logger.error("[Tool] manage_subscription error", { error });
           return createErrorResponse(
             error instanceof Error ? error.message : "Failed to access subscription management"
           );
@@ -1303,7 +1303,7 @@ const handler = withMcpAuth(auth, async (req, session) => {
 
           return createSuccessResponse(message, structuredContentForModel, metaForWidget);
         } catch (error) {
-          console.error("[Tool] connect_item error", { error });
+          logger.error("[Tool] connect_item error", { error });
           return createErrorResponse(
             error instanceof Error ? error.message : "Failed to load account management"
           );
@@ -1445,7 +1445,7 @@ const handler = withMcpAuth(auth, async (req, session) => {
             const recurring = await getRecurringTransactions(accessToken);
             allRecurringStreams.push(...recurring.outflowStreams);
           } catch (error) {
-            console.error("[Tool] Failed to get recurring for one item:", error);
+            logger.error("[Tool] Failed to get recurring for one item:", error);
             // Continue with other items
           }
         }
@@ -1525,7 +1525,7 @@ const handler = withMcpAuth(auth, async (req, session) => {
           metaForWidget
         );
       } catch (error) {
-        console.error("[Tool] track_recurring_payments error", { error });
+        logger.error("[Tool] track_recurring_payments error", { error });
         return createErrorResponse(
           error instanceof Error ? error.message : "Failed to track recurring payments"
         );
@@ -1649,7 +1649,7 @@ const handler = withMcpAuth(auth, async (req, session) => {
           metaForWidget
         );
       } catch (error) {
-        console.error("[Tool] business_cash_flow error", { error });
+        logger.error("[Tool] business_cash_flow error", { error });
         return createErrorResponse(
           error instanceof Error ? error.message : "Failed to analyze business cash flow"
         );
@@ -1776,7 +1776,7 @@ const handler = withMcpAuth(auth, async (req, session) => {
           metaForWidget
         );
       } catch (error) {
-        console.error("[Tool] categorize_expenses error", { error });
+        logger.error("[Tool] categorize_expenses error", { error });
         return createErrorResponse(
           error instanceof Error ? error.message : "Failed to categorize expenses"
         );
@@ -1894,7 +1894,7 @@ const handler = withMcpAuth(auth, async (req, session) => {
           metaForWidget
         );
       } catch (error) {
-        console.error("[Tool] evaluate_payment_risk error", { error });
+        logger.error("[Tool] evaluate_payment_risk error", { error });
         return createErrorResponse(
           error instanceof Error ? error.message : "Failed to evaluate payment risk"
         );
@@ -2197,7 +2197,7 @@ const wrappedHandler = async (req: Request) => {
 
     const response = await handler(req);
 
-    console.log('[MCP] Response:', {
+    logger.debug('[MCP] Response:', {
       status: response.status,
       statusText: response.statusText,
       contentType: response.headers.get('content-type'),
@@ -2221,12 +2221,12 @@ const wrappedHandler = async (req: Request) => {
                 if (tool._meta?.securitySchemes && !tool.securitySchemes) {
                   tool.securitySchemes = tool._meta.securitySchemes;
                   wasPatched = true;
-                  console.log(`[MCP] Patched ${tool.name} with securitySchemes:`, tool.securitySchemes);
+                  logger.debug(`[MCP] Patched ${tool.name} with securitySchemes:`, tool.securitySchemes);
                 }
               }
 
               // Log the patched result
-              console.log('[MCP] tools/list response (after patching):', {
+              logger.debug('[MCP] tools/list response (after patching):', {
                 toolCount: data.result.tools.length,
                 wasPatched,
                 tools: data.result.tools.map((t: { name: string; securitySchemes?: unknown; _meta?: { securitySchemes?: unknown } }) => ({
@@ -2250,7 +2250,7 @@ const wrappedHandler = async (req: Request) => {
 
         // Return patched response if we made changes
         if (wasPatched) {
-          console.log('[MCP] Returning patched tools/list response');
+          logger.debug('[MCP] Returning patched tools/list response');
           return new Response(patchedLines.join('\n'), {
             status: response.status,
             statusText: response.statusText,
@@ -2258,7 +2258,7 @@ const wrappedHandler = async (req: Request) => {
           });
         }
       } catch (e) {
-        console.error('[MCP] Failed to patch tools/list response:', e);
+        logger.error('[MCP] Failed to patch tools/list response:', e);
       }
     }
 

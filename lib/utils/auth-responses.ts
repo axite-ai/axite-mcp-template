@@ -7,6 +7,7 @@
 
 import type { OpenAIResponseMetadata } from "../types";
 import { baseURL } from "@/baseUrl";
+import { logger } from "@/lib/services/logger-service";
 
 /**
  * Create a response that prompts the user to authenticate
@@ -142,9 +143,9 @@ export async function createPlaidRequiredResponse(userId: string, headers: Heade
 }
 
 /**
- * Create a response prompting the user to set up security (2FA or Passkey)
+ * Create a response prompting the user to set up security (Passkey)
  *
- * This is a security requirement - all users must enable a second factor.
+ * This is a security requirement - all users must enable a passkey.
  *
  * @param featureName - Optional name of the feature requiring security
  * @param userId - User ID from the authenticated session
@@ -161,8 +162,8 @@ export function createSecurityRequiredResponse(featureName?: string, userId?: st
   console.log('[Security Required Response] MCP token:', mcpToken ? 'present' : 'missing');
 
   const baseMessage = featureName
-    ? `To access ${featureName}, you must first enable two-factor authentication or a passkey.`
-    : "This feature requires additional security. Please complete security setup to continue.";
+    ? `To access ${featureName}, you must first enable a passkey.`
+    : "This feature requires additional security. Please set up a passkey to continue.";
 
   const responseMeta: OpenAIResponseMetadata = {
     "openai/toolInvocation/invoking": "Checking security status",

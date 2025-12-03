@@ -7,7 +7,7 @@
 
 import { betterAuth } from "better-auth";
 import { createAuthMiddleware } from "better-auth/api";
-import { mcp, apiKey, jwt, twoFactor } from "better-auth/plugins";
+import { mcp, apiKey, jwt } from "better-auth/plugins";
 import { passkey } from "@better-auth/passkey";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { stripe } from "@better-auth/stripe";
@@ -17,6 +17,11 @@ import { Redis } from "ioredis";
 import Stripe from "stripe";
 import type { Subscription, StripePlan } from "@better-auth/stripe";
 import { baseURL as importedBaseURL } from "@/baseUrl";
+import { validateEnvironmentOrExit } from "@/lib/utils/env-validation";
+import { logger } from "@/lib/services/logger-service";
+
+// Validate environment variables on startup
+validateEnvironmentOrExit();
 
 // Create Redis client for secondary storage (rate limiting, caching)
 if (!process.env.REDIS_URL) {
@@ -29,16 +34,16 @@ const redis = new Redis(process.env.REDIS_URL, {
 });
 
 redis.on('error', (error) => {
-  console.error('[Redis] Connection error:', error);
+  logger.error('[Redis] Connection error:', { error: error.message });
 });
 
 redis.on('connect', () => {
-  console.log('[Redis] Connected successfully for rate limiting');
+  logger.info('[Redis] Connected successfully for rate limiting');
 });
 
 // Add error handling for the pool (re-exported from db)
 pool.on('error', (error) => {
-  console.error('[Postgres] Unexpected error on idle client', error);
+  logger.error('[Postgres] Unexpected error on idle client', { error: error.message });
 });
 
 // Create Stripe client for subscription management
@@ -74,7 +79,7 @@ if (!baseURL.endsWith(authBasePath)) {
   baseURL = `${stripTrailingSlash(baseURL)}${authBasePath}`;
 }
 
-console.log("[Auth Config] Resolved URLs:", {
+logger.debug("[Auth Config] Resolved URLs:", {
   appOrigin,
   authBasePath,
   baseURL, // This should now correctly include /api/auth
@@ -119,10 +124,8 @@ export const auth = betterAuth({
   baseURL,
 
   // Secret for signing tokens (MUST be set in production)
-  secret:
-    process.env.BETTER_AUTH_SECRET ||
-    process.env.SESSION_SECRET ||
-    "development-secret-change-in-production",
+  // Validation enforced by lib/utils/env-validation.ts
+  secret: process.env.BETTER_AUTH_SECRET || process.env.SESSION_SECRET || "",
 
   // Disable conflicting endpoints for OAuth compliance (MCP plugin provides /api/auth/mcp/token)
   disabledPaths: ["/token"],
@@ -169,28 +172,16 @@ export const auth = betterAuth({
   },
 
   telemetry: {
-    debug: true
+    debug: process.env.NODE_ENV !== "production",
   },
   logger: {
-    level: 'debug',
+    level: process.env.NODE_ENV === "production" ? "warn" : "debug",
   },
 
 
   // Plugins
   plugins: [
     passkey(),
-    twoFactor({
-      issuer: "AskMyMoney",
-      totpOptions: {
-        period: 30,
-        digits: 6,
-      },
-      backupCodeOptions: {
-        amount: 10,
-        length: 10,
-      },
-      skipVerificationOnEnable: false,
-    }),
     apiKey({
       // Enable API key authentication for server-side operations
       // This allows MCP tools to call auth.api methods without user sessions
@@ -275,7 +266,7 @@ export const auth = betterAuth({
       stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET!,
       createCustomerOnSignUp: true,
       onEvent: async (event) => {
-        console.log("[Stripe Webhook] Received event:", {
+        logger.info("[Stripe Webhook] Received event:", {
           type: event.type,
           id: event.id,
           created: new Date(event.created * 1000).toISOString(),
@@ -284,7 +275,7 @@ export const auth = betterAuth({
         // Debug: Log metadata for subscription-related events
         if (event.type === "customer.subscription.created" || event.type === "customer.subscription.updated") {
           const subscription = event.data.object as any;
-          console.log("[Stripe Webhook] Subscription event details:", {
+          logger.debug("[Stripe Webhook] Subscription event details:", {
             subscriptionId: subscription.id,
             customerId: subscription.customer,
             metadata: subscription.metadata,
@@ -296,7 +287,7 @@ export const auth = betterAuth({
 
         if (event.type === "checkout.session.completed") {
           const session = event.data.object as any;
-          console.log("[Stripe Webhook] Checkout session completed:", {
+          logger.debug("[Stripe Webhook] Checkout session completed:", {
             sessionId: session.id,
             customerId: session.customer,
             subscriptionId: session.subscription,
@@ -309,7 +300,7 @@ export const auth = betterAuth({
           if (session.subscription) {
             try {
               const subscription = await stripeClient.subscriptions.retrieve(session.subscription as string);
-              console.log("[Stripe Webhook] Retrieved subscription object:", {
+              logger.debug("[Stripe Webhook] Retrieved subscription object:", {
                 id: subscription.id,
                 customer: subscription.customer,
                 subscriptionMetadata: subscription.metadata,
@@ -320,7 +311,9 @@ export const auth = betterAuth({
                 })),
               });
             } catch (error) {
-              console.error("[Stripe Webhook] Failed to retrieve subscription:", error);
+              logger.error("[Stripe Webhook] Failed to retrieve subscription:", {
+                error: error instanceof Error ? error.message : 'Unknown error'
+              });
             }
           }
         }

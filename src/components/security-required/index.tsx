@@ -35,12 +35,12 @@ export default function SecurityRequired() {
 
       <div>
         <h3 className="text-lg font-semibold text-default">
-          Additional Security Required
+          Passkey Required
         </h3>
         <p className="text-sm text-secondary mt-1">
           {featureName
-            ? `To access ${featureName}, you need to enable 2FA or a Passkey.`
-            : "This feature requires stronger authentication security."}
+            ? `To access ${featureName}, you need to create a passkey.`
+            : "This feature requires passkey authentication for security."}
         </p>
       </div>
 

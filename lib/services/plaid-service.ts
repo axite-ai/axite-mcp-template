@@ -3,6 +3,7 @@ import { plaidItems, plaidAccounts, plaidTransactions, plaidLinkSessions } from 
 import { eq, sql, inArray, and, gte, lte, desc } from 'drizzle-orm';
 import { getPlaidClient } from '../config/plaid';
 import { EncryptionService } from './encryption-service';
+import { logger } from './logger-service';
 
 // Export Plaid client for use in other services
 export const plaidClient = getPlaidClient();

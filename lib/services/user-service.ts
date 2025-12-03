@@ -10,6 +10,7 @@ import { eq, and, desc, inArray, sql } from 'drizzle-orm';
 import { db } from '../db';
 import { plaidItems } from '../db/schema';
 import { EncryptionService } from './encryption-service';
+import { logger } from './logger-service';
 
 export interface PlaidItem {
   id: string;

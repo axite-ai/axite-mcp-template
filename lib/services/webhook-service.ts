@@ -6,12 +6,14 @@
  */
 
 import crypto from 'crypto';
+import { jwtVerify, decodeJwt, importJWK } from 'jose';
 import { db } from '@/lib/db';
 import { plaidWebhooks, plaidItems } from '@/lib/db/schema';
 import { eq, desc, and, gte, sql } from 'drizzle-orm';
 import { logger, LoggerService, AuditEventType } from './logger-service';
 import { UserService } from './user-service';
 import { syncTransactionsForItem, plaidClient } from './plaid-service';
+import { isProductionDeployment } from '@/lib/utils/env-validation';
 
 /**
  * Plaid webhook payload structure
@@ -50,39 +52,122 @@ export interface WebhookRecord {
  */
 export class WebhookService {
   /**
-   * Verify webhook signature from Plaid
+   * Verify webhook signature from Plaid using JWT verification
    *
-   * @param body - Raw request body
-   * @param signature - Plaid-Verification header
-   * @returns true if signature is valid
+   * Plaid signs webhooks with a JWT in the `Plaid-Verification` header.
+   * This method:
+   * 1. Decodes the JWT to extract the key ID (kid)
+   * 2. Fetches the public JWK from Plaid's API
+   * 3. Verifies the JWT signature
+   * 4. Validates the request body hash matches the JWT claim
+   *
+   * @param body - Raw request body string
+   * @param signedJwt - JWT from Plaid-Verification header
+   * @returns Promise<boolean> - true if signature is valid
    */
-  public static verifyWebhookSignature(body: string, signature: string): boolean {
-    // Plaid uses JWT for webhook verification
-    // For production, implement full JWT verification
-    // For now, we'll implement a simple HMAC verification if PLAID_WEBHOOK_SECRET is set
+  public static async verifyWebhookSignature(
+    body: string,
+    signedJwt: string | null
+  ): Promise<boolean> {
+    const env = isProductionDeployment() ? 'production' : 'development';
 
-    const webhookSecret = process.env.PLAID_WEBHOOK_SECRET;
-
-    if (!webhookSecret) {
-      logger.warn('[Webhook] PLAID_WEBHOOK_SECRET not set, skipping verification');
-      return true; // Allow in development
+    // No signature provided
+    if (!signedJwt) {
+      if (env === 'production') {
+        logger.error('[Webhook] No Plaid-Verification header provided in production');
+        return false;
+      } else {
+        // In sandbox/development, webhooks may not always be signed
+        logger.warn('[Webhook] No Plaid-Verification header (sandbox mode - allowing unsigned webhooks)');
+        return true;
+      }
     }
 
     try {
-      const expectedSignature = crypto
-        .createHmac('sha256', webhookSecret)
-        .update(body)
-        .digest('hex');
-
-      return crypto.timingSafeEqual(
-        Buffer.from(signature),
-        Buffer.from(expectedSignature)
+      // Step 1: Decode JWT header to extract key ID (kid)
+      const decodedJwt = decodeJwt(signedJwt);
+      const header = JSON.parse(
+        Buffer.from(signedJwt.split('.')[0], 'base64').toString()
       );
-    } catch (error) {
-      logger.error('[Webhook] Signature verification failed', {
-        error: error instanceof Error ? error.message : 'Unknown error',
+
+      const kid = header.kid;
+      const alg = header.alg;
+
+      if (!kid) {
+        logger.error('[Webhook] JWT missing kid (key ID) in header');
+        return false;
+      }
+
+      if (alg !== 'ES256') {
+        logger.error('[Webhook] JWT algorithm is not ES256', { alg });
+        return false;
+      }
+
+      logger.debug('[Webhook] Decoded JWT header', { kid, alg });
+
+      // Step 2: Fetch public JWK from Plaid
+      const keyResponse = await plaidClient.webhookVerificationKeyGet({
+        key_id: kid,
       });
-      return false;
+
+      const jwk = keyResponse.data.key;
+      logger.debug('[Webhook] Fetched public JWK from Plaid', {
+        kid,
+        keyAlg: jwk.alg,
+      });
+
+      // Step 3: Import JWK and verify JWT signature
+      const publicKey = await importJWK(jwk, alg);
+      const { payload } = await jwtVerify(signedJwt, publicKey, {
+        algorithms: ['ES256'],
+        maxTokenAge: '5 minutes', // Plaid recommends 5 minute max age
+      });
+
+      logger.debug('[Webhook] JWT signature verified', {
+        iat: payload.iat,
+        requestBodySha256: payload.request_body_sha256,
+      });
+
+      // Step 4: Verify request body hash matches JWT claim
+      const bodyHash = crypto.createHash('sha256').update(body).digest('hex');
+      const claimedHash = payload.request_body_sha256 as string;
+
+      if (bodyHash !== claimedHash) {
+        logger.error('[Webhook] Request body hash mismatch', {
+          computed: bodyHash,
+          claimed: claimedHash,
+        });
+        return false;
+      }
+
+      logger.info('[Webhook] Signature verification successful', { kid });
+      return true;
+    } catch (error) {
+      // JWT verification errors
+      if (error instanceof Error) {
+        if (error.message.includes('expired')) {
+          logger.error('[Webhook] JWT expired (max age: 5 minutes)');
+        } else if (error.message.includes('signature')) {
+          logger.error('[Webhook] JWT signature verification failed', {
+            error: error.message,
+          });
+        } else {
+          logger.error('[Webhook] JWT verification error', {
+            error: error.message,
+          });
+        }
+      } else {
+        logger.error('[Webhook] Unknown verification error', { error });
+      }
+
+      // In production, reject invalid signatures
+      if (env === 'production') {
+        return false;
+      }
+
+      // In development/sandbox, log but allow (webhooks may not be signed)
+      logger.warn('[Webhook] Verification failed but allowing in development mode');
+      return true;
     }
   }
 

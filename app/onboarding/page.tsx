@@ -1,14 +1,13 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { authClient } from "@/lib/auth/client";
 import { Button } from "@openai/apps-sdk-ui/components/Button";
-import { ShieldCheck, Lock } from "@openai/apps-sdk-ui/components/Icon";
+import { ShieldCheck } from "@openai/apps-sdk-ui/components/Icon";
 import { checkSecurityStatus } from "./actions";
 
 function OnboardingContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(true);
@@ -46,10 +45,6 @@ function OnboardingContent() {
     }
   };
 
-  const handle2FASetup = () => {
-    router.push(`/setup-2fa?callbackURL=${encodeURIComponent(callbackURL)}`);
-  };
-
   if (checking) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-surface">
@@ -64,47 +59,35 @@ function OnboardingContent() {
         <div>
           <h2 className="mt-6 heading-lg text-default">Secure Your Account</h2>
           <p className="mt-2 text-sm text-secondary">
-            To continue, please enable a secure authentication method.
+            Create a passkey to secure your financial data with biometric authentication.
           </p>
         </div>
 
         <div className="space-y-4">
-          <div className="p-6 bg-surface border border-subtle rounded-lg">
-            <ShieldCheck className="w-12 h-12 mx-auto text-primary mb-4" />
-            <h3 className="text-lg font-medium text-default">Passkey (Recommended)</h3>
-            <p className="text-sm text-secondary mt-2 mb-6">
+          <div className="p-8 bg-surface border border-subtle rounded-lg">
+            <ShieldCheck className="w-16 h-16 mx-auto text-primary mb-6" />
+            <h3 className="text-xl font-medium text-default">Create Your Passkey</h3>
+            <p className="text-sm text-secondary mt-3 mb-8">
               Sign in securely using your face, fingerprint, or device PIN.
+              Passkeys are phishing-resistant and never leave your device.
             </p>
             <Button
               onClick={handlePasskeySetup}
               disabled={loading}
               loading={loading}
               color="primary"
+              size="xl"
               block
             >
-              Enable Passkey
+              <ShieldCheck className="w-5 h-5 mr-2" />
+              Create Passkey
             </Button>
           </div>
 
-          <div className="relative flex justify-center text-sm py-2">
-            <span className="px-2 bg-surface text-secondary">Or</span>
-          </div>
-
-          <div className="p-6 bg-surface border border-subtle rounded-lg">
-            <Lock className="w-12 h-12 mx-auto text-secondary mb-4" />
-            <h3 className="text-lg font-medium text-default">Authenticator App</h3>
-            <p className="text-sm text-secondary mt-2 mb-6">
-              Use an app like Google Authenticator or Authy.
-            </p>
-            <Button
-              onClick={handle2FASetup}
-              disabled={loading}
-              color="secondary"
-              block
-            >
-              Setup 2FA
-            </Button>
-          </div>
+          <p className="text-xs text-secondary mt-4">
+            <ShieldCheck className="w-3 h-3 inline-block mr-1" />
+            Required for accessing financial data and bank connections
+          </p>
         </div>
       </div>
     </div>

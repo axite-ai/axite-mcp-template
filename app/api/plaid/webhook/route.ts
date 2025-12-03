@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm';
 import { WebhookService } from '@/lib/services/webhook-service';
 import { exchangePublicToken, plaidClient } from '@/lib/services/plaid-service';
 import { UserService } from '@/lib/services/user-service';
+import { logger } from '@/lib/services/logger-service';
 
 /**
  * Plaid Webhook Handler
@@ -19,16 +20,21 @@ export async function POST(request: NextRequest) {
     const body = await request.text();
     const webhook = JSON.parse(body);
 
-    console.log('[Plaid Webhook] Received:', {
+    logger.info('[Plaid Webhook] Received:', {
       type: webhook.webhook_type,
       code: webhook.webhook_code,
     });
 
-    // Verify webhook signature (if configured)
-    const signature = request.headers.get('plaid-verification');
-    if (signature && !WebhookService.verifyWebhookSignature(body, signature)) {
-      console.error('[Plaid Webhook] Invalid signature');
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+    // Verify webhook signature using JWT (REQUIRED in production for security)
+    const signedJwt = request.headers.get('plaid-verification');
+    const isValid = await WebhookService.verifyWebhookSignature(body, signedJwt);
+
+    if (!isValid) {
+      logger.error('[Plaid Webhook] Signature verification failed - rejecting webhook');
+      return NextResponse.json(
+        { error: 'Unauthorized: Invalid webhook signature' },
+        { status: 401 }
+      );
     }
 
     // Handle Multi-Item Link webhooks
@@ -42,7 +48,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error('[Plaid Webhook] Error processing webhook:', error);
+    logger.error('[Plaid Webhook] Error processing webhook:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return NextResponse.json(
       { error: 'Webhook processing failed' },
       { status: 500 }
@@ -56,7 +65,7 @@ export async function POST(request: NextRequest) {
 async function handleLinkWebhook(webhook: any) {
   const { webhook_code, link_session_id, link_token, public_token, public_tokens } = webhook;
 
-  console.log('[Link Webhook] Processing:', {
+  logger.info('[Link Webhook] Processing:', {
     code: webhook_code,
     linkSessionId: link_session_id,
     linkToken: link_token,
@@ -70,8 +79,14 @@ async function handleLinkWebhook(webhook: any) {
     .limit(1);
 
   if (!session) {
-    console.error('[Link Webhook] Session not found for link_token:', link_token);
-    return;
+    // Session not found - log error but return success to prevent Plaid retries
+    // This is expected behavior for expired/invalid sessions
+    logger.error('[Link Webhook] Session not found for link_token:', {
+      linkToken: link_token,
+      webhookCode: webhook_code,
+      linkSessionId: link_session_id,
+    });
+    return; // Implicit 200 OK in handleLinkWebhook
   }
 
   try {
@@ -98,10 +113,14 @@ async function handleLinkWebhook(webhook: any) {
         break;
 
       default:
-        console.log('[Link Webhook] Unhandled code:', webhook_code);
+        logger.debug('[Link Webhook] Unhandled code:', { webhookCode: webhook_code });
     }
   } catch (error) {
-    console.error('[Link Webhook] Error handling webhook:', error);
+    logger.error('[Link Webhook] Error handling webhook:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      sessionId: session.id,
+    });
 
     // Mark session as failed
     await db
@@ -112,7 +131,9 @@ async function handleLinkWebhook(webhook: any) {
       })
       .where(eq(plaidLinkSessions.id, session.id));
 
-    throw error;
+    // Don't throw - return 200 OK to prevent Plaid from retrying
+    // The session is marked as failed for monitoring
+    logger.warn('[Link Webhook] Session marked as failed, webhook acknowledged', { sessionId: session.id });
   }
 }
 

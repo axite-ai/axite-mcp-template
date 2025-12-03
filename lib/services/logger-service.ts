@@ -34,31 +34,18 @@ export const logger = winston.createLogger({
     environment: process.env.NODE_ENV || 'development',
   },
   transports: [
-    // Console transport with colors for development
+    // Console transport - outputs to stdout/stderr for Railway/Vercel log aggregation
+    // In production: JSON format for structured log parsing
+    // In development: Colored console format for readability
     new winston.transports.Console({
-      format: combine(
-        colorize(),
-        timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-        consoleFormat
-      ),
+      format:
+        process.env.NODE_ENV === 'production'
+          ? combine(timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }), json())
+          : combine(colorize(), timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }), consoleFormat),
     }),
-
-    // File transport for errors
-    ...(process.env.NODE_ENV === 'production'
-      ? [
-          new winston.transports.File({
-            filename: 'logs/error.log',
-            level: 'error',
-            maxsize: 10485760, // 10MB
-            maxFiles: 5,
-          }),
-          new winston.transports.File({
-            filename: 'logs/combined.log',
-            maxsize: 10485760, // 10MB
-            maxFiles: 10,
-          }),
-        ]
-      : []),
+    // NOTE: No file transports in production - Railway/Vercel handle log persistence
+    // via their built-in log aggregation systems. Local file logging would be ephemeral
+    // in containerized/serverless environments.
   ],
 });
 

@@ -59,18 +59,18 @@ export function middleware(request: NextRequest) {
     });
   }
 
-  // Check 2FA requirements for authenticated routes
+  // Check passkey requirements for authenticated routes
   // NOTE: This is UX optimization only - real security is enforced at API/data layer
   // Edge runtime cannot validate sessions, so we only check for cookie existence
   const pathname = request.nextUrl.pathname;
 
-  // Skip 2FA check for auth routes, public routes, and static files
+  // Skip passkey check for auth routes, public routes, and static files
   const publicPaths = [
     "/login",
     "/auth-callback",
     "/setup-security",
-    "/setup-2fa",
-    "/verify-2fa",
+    "/onboarding",
+    "/recover",
     "/api/auth",
     "/_next",
     "/favicon.ico",
@@ -86,12 +86,12 @@ export function middleware(request: NextRequest) {
 
     if (sessionCookie) {
       // User appears to be authenticated based on cookie
-      // We cannot check twoFactorEnabled in edge runtime
-      // The API layer (requireAuth) will enforce 2FA when they make requests
+      // We cannot check passkey status in edge runtime
+      // The API layer (requireAuth) will enforce passkey when they make requests
       // This is just for UX - redirecting logged-in users to setup if needed
 
-      // Note: We cannot verify 2FA status here due to edge runtime limitations
-      // The actual 2FA enforcement happens at:
+      // Note: We cannot verify passkey status here due to edge runtime limitations
+      // The actual passkey enforcement happens at:
       // 1. MCP Tool layer (requireAuth helper)
       // 2. Server Action layer (direct checks)
     }

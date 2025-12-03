@@ -15,16 +15,12 @@ export async function checkSecurityStatus() {
     return { authenticated: false };
   }
 
-  // Check 2FA enabled
-  const twoFactorEnabled = session.user.twoFactorEnabled;
-
   // Check if user has passkeys
-  // We need to query the database directly or use an API if available
   const userPasskeys = await db.select().from(passkey).where(eq(passkey.userId, session.user.id));
   const hasPasskey = userPasskeys.length > 0;
 
   return {
     authenticated: true,
-    hasSecurity: twoFactorEnabled || hasPasskey,
+    hasSecurity: hasPasskey,
   };
 }

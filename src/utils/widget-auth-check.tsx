@@ -31,7 +31,7 @@ import SecurityRequired from "@/src/components/security-required";
 export function checkWidgetAuth(toolOutput: any) {
   if (!toolOutput) return null;
 
-  // Check for Security required (2FA or Passkey)
+  // Check for Security required (Passkey)
   if (toolOutput.message === "Security setup required") {
     return <SecurityRequired />;
   }

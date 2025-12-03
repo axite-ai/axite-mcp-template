@@ -70,21 +70,15 @@ export const createPlaidLinkToken = async (
 
     const userId = mcpSession.userId;
 
-    // Check 2: Security (2FA or Passkey) Enabled (CRITICAL SECURITY CHECK)
-    const fullSession = await auth.api.getSession({ headers: authHeaders });
-    const twoFactorEnabled = fullSession?.user?.twoFactorEnabled;
+    // Check 2: Security (Passkey) Enabled (CRITICAL SECURITY CHECK)
+    const passkeys = await db.select().from(passkey).where(eq(passkey.userId, userId)).limit(1);
+    const hasPasskey = passkeys.length > 0;
 
-    let hasPasskey = false;
-    if (!twoFactorEnabled) {
-      const passkeys = await db.select().from(passkey).where(eq(passkey.userId, userId)).limit(1);
-      hasPasskey = passkeys.length > 0;
-    }
-
-    if (!twoFactorEnabled && !hasPasskey) {
-      console.log('[Server Action] Security not enabled for user:', userId);
+    if (!hasPasskey) {
+      console.log('[Server Action] Passkey not enabled for user:', userId);
       return {
         success: false,
-        error: 'Security setup required. Please enable 2FA or Passkeys in your account settings.',
+        error: 'Security setup required. Please set up a passkey in your account settings.',
       };
     }
 

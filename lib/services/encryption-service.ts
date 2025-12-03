@@ -122,10 +122,14 @@ export class EncryptionService {
   }
 }
 
-// Run encryption test on module load in development
-if (process.env.NODE_ENV !== 'production') {
-  const testResult = EncryptionService.testEncryption();
-  if (!testResult) {
-    console.error('❌ Encryption service failed self-test!');
+// Run encryption test on module load in ALL environments
+// This catches misconfigured encryption keys before they cause runtime failures
+const testResult = EncryptionService.testEncryption();
+if (!testResult) {
+  const errorMsg = '❌ Encryption service failed self-test! Check ENCRYPTION_KEY configuration.';
+  console.error(errorMsg);
+  if (process.env.NODE_ENV === 'production') {
+    // Fatal error in production
+    throw new Error(errorMsg);
   }
 }
