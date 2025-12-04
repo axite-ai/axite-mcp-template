@@ -13,7 +13,6 @@ export function middleware(request: NextRequest) {
     /^https:\/\/chat\.openai\.com$/,
     /^https:\/\/.*\.claude\.ai$/,
     /^https:\/\/claude\.com$/,
-    /^https:\/\/dev\.askmymoney\.ai$/, // Allow local dev domain
   ];
 
   // Check if origin is allowed
@@ -32,15 +31,16 @@ export function middleware(request: NextRequest) {
     : "null";
 
   // Define Content Security Policy
+  // TEMPLATE: Add your third-party service domains (e.g., payment processors, analytics) to these directives
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.claude.ai https://chat.openai.com https://cdn.plaid.com https://challenges.cloudflare.com https://*.cloudflare.com",
+    "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.claude.ai https://chat.openai.com https://challenges.cloudflare.com https://*.cloudflare.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' data: https://fonts.gstatic.com",
     "img-src 'self' data:",
-    `frame-src 'self' https://*.claude.ai https://*.oaiusercontent.com https://chat.openai.com https://cdn.plaid.com`,
-    "connect-src 'self' https://*.claude.ai https://chat.openai.com https://*.plaid.com",
-    `base-uri 'self' ${process.env.NODE_ENV === "development" ? "http://localhost:3000" : "https://dev.askmymoney.ai"}`,
+    `frame-src 'self' https://*.claude.ai https://*.oaiusercontent.com https://chat.openai.com`,
+    "connect-src 'self' https://*.claude.ai https://chat.openai.com",
+    `base-uri 'self'`,
     "form-action 'self'",
     "frame-ancestors 'self' https://*.claude.ai https://*.oaiusercontent.com https://chat.openai.com",
   ].join("; ");

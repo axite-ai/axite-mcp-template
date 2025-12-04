@@ -2,7 +2,7 @@ import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const FROM_EMAIL = process.env.EMAIL_FROM || "noreply@askmymoney.app";
+const FROM_EMAIL = process.env.EMAIL_FROM || "noreply@example.com";
 
 export interface SendEmailOptions {
   to: string;
@@ -48,7 +48,7 @@ export const EmailService = {
     userName: string,
     planName: string
   ) {
-    const subject = "Welcome to AskMyMoney! 🎉";
+    const subject = "Welcome! 🎉";
     const html = `
 <!DOCTYPE html>
 <html>
@@ -70,33 +70,33 @@ export const EmailService = {
 <body>
   <div class="container">
     <div class="header">
-      <h1>Welcome to AskMyMoney!</h1>
+      <h1>Welcome!</h1>
     </div>
     <div class="content">
       <h2>Hi ${userName}! 👋</h2>
-      <p>Thank you for subscribing to the <strong>${planName}</strong> plan. We're excited to help you take control of your finances with AI-powered insights.</p>
+      <p>Thank you for subscribing to the <strong>${planName}</strong> plan. We're excited to have you on board!</p>
 
       <div class="next-steps">
         <h3 style="margin-top: 0;">Next Steps:</h3>
         <ol>
-          <li><strong>Connect Your Bank Account</strong> - Link your financial accounts securely through Plaid to start getting insights</li>
-          <li><strong>Ask Financial Questions</strong> - Use ChatGPT to ask about your balances, transactions, spending patterns, and more</li>
-          <li><strong>Get Personalized Insights</strong> - Receive AI-powered recommendations to optimize your finances</li>
+          <li><strong>Get Started</strong> - Head to ChatGPT and start using your new features</li>
+          <li><strong>Explore Tools</strong> - Try out the MCP tools available in your plan</li>
+          <li><strong>Get Help</strong> - Check our documentation or reach out to support</li>
         </ol>
       </div>
 
-      <p>When you return to your ChatGPT conversation, simply try using any financial tool and you'll be prompted to connect your bank account.</p>
+      <p>When you return to your ChatGPT conversation, you'll have access to all your plan features.</p>
 
       <p>If you have any questions or need assistance, just reply to this email - we're here to help!</p>
 
       <p style="margin-top: 30px;">
         Best regards,<br>
-        The AskMyMoney Team
+        The Team
       </p>
     </div>
     <div class="footer">
-      <p>You're receiving this email because you subscribed to AskMyMoney.</p>
-      <p>© ${new Date().getFullYear()} AskMyMoney. All rights reserved.</p>
+      <p>You're receiving this email because you subscribed to our service.</p>
+      <p>© ${new Date().getFullYear()} All rights reserved.</p>
     </div>
   </div>
 </body>
@@ -107,17 +107,18 @@ export const EmailService = {
   },
 
   /**
-   * Send bank connection confirmation email
+   * TEMPLATE: Example method for sending account connection confirmation emails
+   * Customize or remove this based on your application's needs
    */
-  async sendBankConnectionConfirmation(
+  async sendAccountConnectionConfirmation(
     email: string,
     userName: string,
-    institutionName: string,
-    isFirstAccount: boolean
+    serviceName: string,
+    isFirstConnection: boolean
   ) {
-    const subject = isFirstAccount
-      ? "Bank Account Connected Successfully! 🏦"
-      : "New Bank Account Added! 🏦";
+    const subject = isFirstConnection
+      ? "Account Connected Successfully! ✓"
+      : "New Account Added! ✓";
 
     const html = `
 <!DOCTYPE html>
@@ -140,47 +141,45 @@ export const EmailService = {
 <body>
   <div class="container">
     <div class="header">
-      <h1>${isFirstAccount ? "You're All Set!" : "Account Added!"}</h1>
+      <h1>${isFirstConnection ? "You're All Set!" : "Account Added!"}</h1>
     </div>
     <div class="content">
       <h2>Hi ${userName}! 👋</h2>
       <div class="success-badge">✓ Successfully Connected</div>
-      <p><strong>${institutionName}</strong> has been ${isFirstAccount ? "connected" : "added"} to your AskMyMoney account.</p>
+      <p><strong>${serviceName}</strong> has been ${isFirstConnection ? "connected" : "added"} to your account.</p>
 
       ${
-        isFirstAccount
+        isFirstConnection
           ? `
       <div class="features">
         <h3 style="margin-top: 0;">What You Can Do Now:</h3>
         <ul>
-          <li><strong>Check Balances</strong> - Ask ChatGPT "What are my account balances?"</li>
-          <li><strong>View Transactions</strong> - Ask "Show me my recent transactions"</li>
-          <li><strong>Analyze Spending</strong> - Ask "What are my spending insights?"</li>
-          <li><strong>Health Check</strong> - Ask "Check my account health"</li>
-          <li><strong>Get Financial Tips</strong> - Ask for personalized advice</li>
+          <li><strong>Use MCP Tools</strong> - Access your features in ChatGPT</li>
+          <li><strong>Explore Features</strong> - Try out the available functionality</li>
+          <li><strong>Get Help</strong> - Check documentation or contact support</li>
         </ul>
       </div>
       `
           : `
-      <p>You now have multiple accounts connected, giving you a more complete view of your financial picture across all your institutions.</p>
+      <p>You now have multiple accounts connected, giving you access to more features.</p>
       `
       }
 
-      <p>Your financial data is securely encrypted and only accessible by you. We use bank-level security to protect your information.</p>
+      <p>Your data is securely encrypted and only accessible by you. We use industry-standard encryption to protect your information.</p>
 
       <p style="margin-top: 30px;">
         Ready to start?<br>
-        Head back to ChatGPT and start asking questions about your finances!
+        Head back to ChatGPT and start using your features!
       </p>
 
       <p style="margin-top: 30px;">
         Best regards,<br>
-        The AskMyMoney Team
+        The Team
       </p>
     </div>
     <div class="footer">
-      <p>You're receiving this email because you connected a bank account to AskMyMoney.</p>
-      <p>© ${new Date().getFullYear()} AskMyMoney. All rights reserved.</p>
+      <p>You're receiving this email because you connected an account to our service.</p>
+      <p>© ${new Date().getFullYear()} All rights reserved.</p>
     </div>
   </div>
 </body>

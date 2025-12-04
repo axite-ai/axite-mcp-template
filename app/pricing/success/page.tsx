@@ -49,15 +49,15 @@ export default function SubscriptionSuccessPage() {
             </svg>
             <div>
               <h3 className="text-lg font-semibold text-blue-400 mb-2">
-                Next Step: Connect Your Bank
+                Next Step: Start Using Your Features
               </h3>
               <p className="text-gray-300 mb-4">
-                Return to <strong>ChatGPT</strong> to connect your bank account via Plaid.
-                This will enable all financial features like transaction tracking, spending insights, and account health monitoring.
+                Return to <strong>ChatGPT</strong> to start using your new plan features.
+                All MCP tools in your subscription tier are now available.
               </p>
               <p className="text-sm text-gray-400">
-                Simply go back to your ChatGPT conversation and try any financial query -
-                you&apos;ll be prompted to connect your bank account.
+                Simply go back to your ChatGPT conversation and try out the available tools -
+                you now have full access to your plan features.
               </p>
             </div>
           </div>
@@ -75,13 +75,13 @@ export default function SubscriptionSuccessPage() {
             <svg className="w-4 h-4 text-blue-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span>Return to ChatGPT to connect your bank</span>
+            <span>Return to ChatGPT to use your features</span>
           </div>
           <div className="flex items-center justify-center text-gray-500">
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
-            <span>Start tracking your finances</span>
+            <span>Explore your new capabilities</span>
           </div>
         </div>
 

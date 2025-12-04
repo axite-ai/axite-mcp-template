@@ -1,9 +1,9 @@
 "use client";
 
-import { useWidgetProps } from "@openai/widget-sdk";
+import { useWidgetProps } from "@/src/use-widget-props";
 import type { ROICalculatorContent } from "@/lib/types/tool-responses";
 
-interface ToolOutput {
+interface ToolOutput extends Record<string, unknown> {
   structuredContent: ROICalculatorContent;
 }
 
@@ -58,7 +58,7 @@ export default function ROICalculatorWidget() {
       <div>
         <h3 className="text-lg font-semibold mb-3">Year-by-Year Breakdown</h3>
         <div className="space-y-2 max-h-96 overflow-y-auto">
-          {results.yearByYear.map((year) => (
+          {results.yearByYear.map((year: { year: number; value: number; gain: number }) => (
             <div
               key={year.year}
               className="flex items-center justify-between bg-white border border-gray-200 rounded p-3"

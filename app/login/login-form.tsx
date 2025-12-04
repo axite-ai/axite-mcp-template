@@ -104,7 +104,7 @@ export default function LoginForm() {
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center heading-lg text-default">
-            Welcome to AskMyMoney
+            Welcome
           </h2>
           <p className="mt-2 text-center text-sm text-secondary">
             Sign in with your passkey to continue

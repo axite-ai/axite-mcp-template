@@ -5,9 +5,9 @@
  * These responses include the login widget to allow users to authenticate inline.
  */
 
-import type { OpenAIResponseMetadata } from "../types";
+import type { AuthChallengeResponse } from "../types/tool-responses";
+import { createTextContent, createMCPResponse } from "../types/mcp-responses";
 import { baseURL } from "@/baseUrl";
-import { logger } from "@/lib/services/logger-service";
 
 /**
  * Create a response that prompts the user to authenticate
@@ -18,33 +18,27 @@ import { logger } from "@/lib/services/logger-service";
  * @param featureName - Optional name of the feature requiring authentication
  * @returns MCP tool response with login widget reference
  */
-export function createLoginPromptResponse(featureName?: string) {
+export function createLoginPromptResponse(featureName?: string): AuthChallengeResponse {
   const baseMessage = featureName
     ? `To access ${featureName}, please sign in to your account.`
     : "This feature requires authentication. Please sign in to your account.";
 
-  const responseMeta: OpenAIResponseMetadata = {
-    "openai/toolInvocation/invoking": "Checking authentication",
-    "openai/toolInvocation/invoked": "Authentication required",
-    "openai/outputTemplate": "ui://widget/login.html",
-    "openai/widgetAccessible": false, // Login widget should not call tools
-    "openai/resultCanProduceWidget": true, // This response produces a widget
-  };
-
-  return {
-    content: [
-      {
-        type: "text" as const,
-        text: baseMessage,
-      } as { [x: string]: unknown; type: "text"; text: string },
-    ],
-    // Include minimal structured content to satisfy outputSchema validation
-    structuredContent: {
-      message: baseMessage,
-    },
-    isError: false, // Not an error - just requires auth
-    _meta: responseMeta,
-  };
+  return createMCPResponse(
+    [createTextContent(baseMessage)],
+    {
+      structuredContent: {
+        message: baseMessage,
+      },
+      _meta: {
+        "openai/toolInvocation/invoking": "Checking authentication",
+        "openai/toolInvocation/invoked": "Authentication required",
+        "openai/outputTemplate": "ui://widget/login.html",
+        "openai/widgetAccessible": false,
+        "openai/resultCanProduceWidget": true,
+      },
+      isError: false,
+    }
+  );
 }
 
 /**
@@ -54,38 +48,31 @@ export function createLoginPromptResponse(featureName?: string) {
  * @param userId - User ID from the authenticated MCP session
  * @returns MCP tool response with subscription-required widget reference
  */
-export function createSubscriptionRequiredResponse(featureName?: string, userId?: string) {
+export function createSubscriptionRequiredResponse(featureName?: string, userId?: string): AuthChallengeResponse {
   const baseMessage = featureName
     ? `To access ${featureName}, please subscribe to a plan.`
     : "This feature requires a subscription. Please choose a plan.";
 
-  const responseMeta: OpenAIResponseMetadata = {
-    "openai/toolInvocation/invoking": "Checking subscription",
-    "openai/toolInvocation/invoked": "Subscription required",
-    "openai/outputTemplate": "ui://widget/subscription-required.html",
-    "openai/widgetAccessible": false,
-    "openai/resultCanProduceWidget": true,
-  };
-
-  return {
-    content: [
-      {
-        type: "text" as const,
-        text: baseMessage,
-      } as { [x: string]: unknown; type: "text"; text: string },
-    ],
-    // Include structured content so widget can access feature name, pricing URL, and userId
-    structuredContent: {
-      featureName: featureName || "this feature",
-      error_message: "Subscription required",
-      pricingUrl: `${baseURL}/pricing`,
-    },
-    isError: false,
-    _meta: {
-      ...responseMeta,
-      userId, // Pass userId so widget can use it in server action
-    },
-  };
+  return createMCPResponse(
+    [createTextContent(baseMessage)],
+    {
+      structuredContent: {
+        message: baseMessage,
+        featureName: featureName || "this feature",
+        error_message: "Subscription required",
+        pricingUrl: `${baseURL}/pricing`,
+      },
+      _meta: {
+        "openai/toolInvocation/invoking": "Checking subscription",
+        "openai/toolInvocation/invoked": "Subscription required",
+        "openai/outputTemplate": "ui://widget/subscription-required.html",
+        "openai/widgetAccessible": false,
+        "openai/resultCanProduceWidget": true,
+        userId,
+      },
+      isError: false,
+    }
+  );
 }
 
 /**
@@ -97,40 +84,31 @@ export function createSubscriptionRequiredResponse(featureName?: string, userId?
  * @param userId - User ID from the authenticated session
  * @returns MCP tool response indicating security setup is required
  */
-export function createSecurityRequiredResponse(featureName?: string, userId?: string) {
+export function createSecurityRequiredResponse(featureName?: string, userId?: string): AuthChallengeResponse {
   console.log('[Security Required Response] Creating response for user:', userId);
 
   const baseMessage = featureName
     ? `To access ${featureName}, you must first enable a passkey.`
     : "This feature requires additional security. Please set up a passkey to continue.";
 
-  const responseMeta: OpenAIResponseMetadata = {
-    "openai/toolInvocation/invoking": "Checking security status",
-    "openai/toolInvocation/invoked": "Security setup required",
-    "openai/outputTemplate": "ui://widget/security-required.html", // We will map this to a simple widget later or just rely on the link
-    "openai/widgetAccessible": false,
-    "openai/resultCanProduceWidget": true,
-  };
-
-  const response = {
-    content: [
-      {
-        type: "text" as const,
-        text: baseMessage,
-      } as { [x: string]: unknown; type: "text"; text: string },
-    ],
-    structuredContent: {
-      message: "Security setup required",
-      baseUrl: baseURL,
-      featureName: featureName || "this feature",
-      setupUrl: `${baseURL}/onboarding`,
-    },
-    isError: false, // Not an error - security requirement
-    _meta: {
-      ...responseMeta,
-      userId,
-    },
-  };
-
-  return response;
+  return createMCPResponse(
+    [createTextContent(baseMessage)],
+    {
+      structuredContent: {
+        message: "Security setup required",
+        baseUrl: baseURL,
+        featureName: featureName || "this feature",
+        setupUrl: `${baseURL}/onboarding`,
+      },
+      _meta: {
+        "openai/toolInvocation/invoking": "Checking security status",
+        "openai/toolInvocation/invoked": "Security setup required",
+        "openai/outputTemplate": "ui://widget/security-required.html",
+        "openai/widgetAccessible": false,
+        "openai/resultCanProduceWidget": true,
+        userId,
+      },
+      isError: false,
+    }
+  );
 }

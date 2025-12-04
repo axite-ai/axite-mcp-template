@@ -67,13 +67,16 @@ export function extractOpenAIMetadata(params: Record<string, unknown>): OpenAIMe
 }
 
 /**
+ * TEMPLATE: Example helper function from previous Plaid integration
  * Create a tool execution context from session and parameters
  *
  * Combines authentication (from session) with OpenAI metadata (from params)
  * to provide a complete context for tool execution.
  *
+ * Customize this for your application's specific needs.
+ *
  * @param session - Authenticated MCP session
- * @param plaidAccessTokens - User's Plaid access tokens
+ * @param integrationTokens - User's third-party service access tokens (customize for your app)
  * @param params - Tool parameters (may contain _meta)
  * @returns Complete execution context
  *
@@ -84,7 +87,7 @@ export function extractOpenAIMetadata(params: Record<string, unknown>): OpenAIMe
  */
 export function createToolContext(
   session: McpSession,
-  plaidAccessTokens: string[],
+  integrationTokens: string[],
   params?: Record<string, unknown>
 ): ToolExecutionContext {
   const metadata = params ? extractOpenAIMetadata(params) : undefined;
@@ -93,6 +96,6 @@ export function createToolContext(
     userId: session.userId,
     sessionId: session.sessionId,
     metadata,
-    plaidAccessTokens,
+    plaidAccessTokens: integrationTokens, // Note: Property name kept for compatibility with ToolExecutionContext type
   };
 }

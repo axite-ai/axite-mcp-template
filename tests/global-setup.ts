@@ -8,7 +8,7 @@ import { sql } from 'drizzle-orm';
  * Creates test database and applies migrations using Drizzle
  */
 export default async () => {
-  const dbName = 'askmymoney_test';
+  const dbName = 'axite_mcp_test';
   const baseUrl = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432';
   const adminUrl = baseUrl.replace(/\/[^/]*$/, '/postgres'); // Replace database name with 'postgres'
 

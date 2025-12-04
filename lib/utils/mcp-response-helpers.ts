@@ -7,18 +7,20 @@ import type {
   MCPToolResponse,
   OpenAIResponseMetadata,
 } from "@/lib/types/mcp-responses";
+import type { AuthChallengeContent } from "@/lib/types/tool-responses";
 import { createTextContent } from "@/lib/types/mcp-responses";
 
 /**
- * Creates a generic error response
+ * Creates a generic error response that matches AuthChallengeContent structure
+ * This allows error responses to be compatible with tool response union types
  */
 export const createErrorResponse = (
   message: string,
   meta?: Partial<OpenAIResponseMetadata>
-): MCPToolResponse<{ error: string }, OpenAIResponseMetadata> => ({
+): MCPToolResponse<AuthChallengeContent, OpenAIResponseMetadata> => ({
   content: [createTextContent(message)],
   structuredContent: {
-    error: message
+    message,
   },
   isError: true,
   _meta: {

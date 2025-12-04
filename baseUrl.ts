@@ -9,7 +9,7 @@ const railwayUrl = process.env.RAILWAY_PUBLIC_DOMAIN
 const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined;
 
 // Development fallback (only used in local development)
-const localUrl = "https://dev.askmymoney.ai";
+const localUrl = "http://localhost:3000";
 
 // Priority: Explicit > Railway > Vercel > Local (dev only)
 // In production, env validation will ensure at least one platform URL is set

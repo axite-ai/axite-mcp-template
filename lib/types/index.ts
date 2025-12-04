@@ -1,5 +1,5 @@
 /**
- * Shared TypeScript types for AskMyMoney monorepo
+ * Shared TypeScript types for MCP application
  */
 
 // OpenAI Apps SDK metadata types
@@ -7,6 +7,9 @@ export type {
   OpenAIUserLocation,
   OpenAIMetadata,
   ToolExecutionContext,
-  OpenAIResponseMetadata,
   ToolAnnotations,
 } from './openai-metadata';
+
+export type {
+  OpenAIResponseMetadata,
+} from './mcp-responses';

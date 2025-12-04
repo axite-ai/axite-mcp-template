@@ -30,7 +30,7 @@ export const logger = winston.createLogger({
     json()
   ),
   defaultMeta: {
-    service: 'askmymoney-mcp',
+    service: 'axite-mcp',
     environment: process.env.NODE_ENV || 'development',
   },
   transports: [

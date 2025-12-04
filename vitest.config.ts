@@ -11,7 +11,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     test: {
-      name: 'askmymoney',
+      name: 'axite-mcp-template',
       environment: 'happy-dom',
       globals: true,
       globalSetup: './tests/global-setup.ts',

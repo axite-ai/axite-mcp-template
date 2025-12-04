@@ -47,7 +47,7 @@ const getAppsSdkCompatibleHtml = async (baseUrl: string, path: string) => {
 // MCP HANDLER WITH OAUTH
 // ============================================================================
 
-const handler = withMcpAuth(auth, async (req, session) => {
+const handler = withMcpAuth(auth, async (req: Request, session: any) => {
   // Log session details for debugging
   logger.debug("[MCP] Session received:", {
     hasSession: !!session,
@@ -167,17 +167,17 @@ const handler = withMcpAuth(auth, async (req, session) => {
         },
         securitySchemes: [{ type: "oauth2", scopes: ["items:read"] }],
       } as any,
-      async ({ status = "active", limit = 50 }) => {
+      async ({ status = "active", limit = 50 }): Promise<UserItemsResponse> => {
         try {
           // Check authentication and subscription
           const authCheck = await requireAuth(session, "user items", {
             requireSubscription: true,
           });
-          if (authCheck) return authCheck as UserItemsResponse;
+          if (authCheck) return authCheck;
 
           // Fetch items from database
           const items = await ItemsService.getUserItems(session!.userId, {
-            status,
+            status: status as "active" | "archived" | "deleted",
             limit,
           });
 
@@ -198,12 +198,12 @@ const handler = withMcpAuth(auth, async (req, session) => {
               totalItems: items.length,
               displayedItems: items.length,
             }
-          ) as UserItemsResponse;
+          );
         } catch (error) {
           logger.error("get_user_items failed", { error });
           return createErrorResponse(
             error instanceof Error ? error.message : "Failed to fetch items"
-          ) as UserItemsResponse;
+          );
         }
       }
     );
@@ -248,13 +248,14 @@ const handler = withMcpAuth(auth, async (req, session) => {
         },
         securitySchemes: [{ type: "oauth2", scopes: ["items:write"] }],
       } as any,
-      async ({ action, itemId, title, description, metadata, order }) => {
+      async (args: any): Promise<ManageItemResponse> => {
+        const { action, itemId, title, description, metadata, order } = args;
         try {
           // Check authentication and subscription
           const authCheck = await requireAuth(session, "manage items", {
             requireSubscription: true,
           });
-          if (authCheck) return authCheck as ManageItemResponse;
+          if (authCheck) return authCheck;
 
           let result;
           let actionPerformed: "created" | "updated" | "deleted" | "archived";
@@ -264,7 +265,7 @@ const handler = withMcpAuth(auth, async (req, session) => {
               if (!title) {
                 return createErrorResponse(
                   "Title is required to create an item"
-                ) as ManageItemResponse;
+                );
               }
               result = await ItemsService.createItem({
                 userId: session!.userId,
@@ -280,7 +281,7 @@ const handler = withMcpAuth(auth, async (req, session) => {
               if (!itemId) {
                 return createErrorResponse(
                   "Item ID is required to update an item"
-                ) as ManageItemResponse;
+                );
               }
               result = await ItemsService.updateItem(itemId, session!.userId, {
                 title,
@@ -295,7 +296,7 @@ const handler = withMcpAuth(auth, async (req, session) => {
               if (!itemId) {
                 return createErrorResponse(
                   "Item ID is required to archive an item"
-                ) as ManageItemResponse;
+                );
               }
               result = await ItemsService.archiveItem(itemId, session!.userId);
               actionPerformed = "archived";
@@ -305,14 +306,14 @@ const handler = withMcpAuth(auth, async (req, session) => {
               if (!itemId) {
                 return createErrorResponse(
                   "Item ID is required to delete an item"
-                ) as ManageItemResponse;
+                );
               }
               result = await ItemsService.deleteItem(itemId, session!.userId);
               actionPerformed = "deleted";
               break;
 
             default:
-              return createErrorResponse("Invalid action") as ManageItemResponse;
+              return createErrorResponse("Invalid action");
           }
 
           return createSuccessResponse(
@@ -331,12 +332,12 @@ const handler = withMcpAuth(auth, async (req, session) => {
               action: actionPerformed,
               message: `Item ${actionPerformed} successfully`,
             }
-          ) as ManageItemResponse;
+          );
         } catch (error) {
           logger.error("manage_item failed", { error, action, itemId });
           return createErrorResponse(
             error instanceof Error ? error.message : "Failed to manage item"
-          ) as ManageItemResponse;
+          );
         }
       }
     );
@@ -370,7 +371,8 @@ const handler = withMcpAuth(auth, async (req, session) => {
         },
         securitySchemes: [], // No auth required - free tier
       } as any,
-      async ({ location }) => {
+      async (args: any): Promise<WeatherResponse> => {
+        const { location } = args;
         try {
           // No auth required for free tier tools
           // TEMPLATE: You can add requireAuth with requireSubscription: false
@@ -392,14 +394,14 @@ const handler = withMcpAuth(auth, async (req, session) => {
               forecast: weatherData.forecast,
               lastUpdated: new Date().toISOString(),
             }
-          ) as WeatherResponse;
+          );
         } catch (error) {
           logger.error("get_weather failed", { error, location });
           return createErrorResponse(
             error instanceof Error
               ? error.message
               : "Failed to fetch weather data"
-          ) as WeatherResponse;
+          ) as unknown as WeatherResponse;
         }
       }
     );
@@ -445,7 +447,8 @@ const handler = withMcpAuth(auth, async (req, session) => {
         },
         securitySchemes: [], // No auth required - free tier
       } as any,
-      async ({ initialInvestment, years, annualReturn }) => {
+      async (args: any): Promise<ROICalculatorResponse> => {
+        const { initialInvestment, years, annualReturn } = args;
         try {
           // Calculate year-by-year returns
           const yearByYear = [];
@@ -482,12 +485,12 @@ const handler = withMcpAuth(auth, async (req, session) => {
               },
               calculatedAt: new Date().toISOString(),
             }
-          ) as ROICalculatorResponse;
+          );
         } catch (error) {
           logger.error("calculate_roi failed", { error });
           return createErrorResponse(
             "Failed to calculate ROI"
-          ) as ROICalculatorResponse;
+          ) as unknown as ROICalculatorResponse;
         }
       }
     );
@@ -518,34 +521,37 @@ const handler = withMcpAuth(auth, async (req, session) => {
           },
           securitySchemes: [{ type: "oauth2", scopes: ["subscription:read"] }],
         } as any,
-        async () => {
+        async (): Promise<ManageSubscriptionResponse> => {
           try {
             // Check authentication (no subscription required to view subscription!)
             const authCheck = await requireAuth(session, "subscription management", {
               requireSubscription: false,
             });
-            if (authCheck) return authCheck as ManageSubscriptionResponse;
+            if (authCheck) return authCheck;
 
             // Get user's Stripe customer ID
             const userRecord = await auth.api.getSession({
               headers: req.headers,
             });
 
-            if (!userRecord?.user?.stripeCustomerId) {
+            // Cast to any to access stripeCustomerId added by plugin
+            const user = userRecord?.user as any;
+
+            if (!user?.stripeCustomerId) {
               return createErrorResponse(
                 "No Stripe customer found. Please contact support."
-              ) as ManageSubscriptionResponse;
+              );
             }
 
             // Create billing portal session
-            const portalSession = await stripe.billingPortal.sessions.create({
-              customer: userRecord.user.stripeCustomerId,
+            const portalSession = await stripe!.billingPortal.sessions.create({
+              customer: user.stripeCustomerId,
               return_url: `${baseURL}/settings`,
             });
 
             // Get subscription info (if exists)
-            const subscriptions = await stripe.subscriptions.list({
-              customer: userRecord.user.stripeCustomerId,
+            const subscriptions = await stripe!.subscriptions.list({
+              customer: user.stripeCustomerId,
               limit: 1,
             });
 
@@ -562,10 +568,10 @@ const handler = withMcpAuth(auth, async (req, session) => {
                         subscription.items.data[0]?.price.metadata?.plan || "unknown",
                       status: subscription.status,
                       periodStart: new Date(
-                        subscription.current_period_start * 1000
+                        ((subscription as any).current_period_start) * 1000
                       ).toISOString(),
                       periodEnd: new Date(
-                        subscription.current_period_end * 1000
+                        ((subscription as any).current_period_end) * 1000
                       ).toISOString(),
                       cancelAtPeriodEnd: subscription.cancel_at_period_end,
                     }
@@ -573,12 +579,12 @@ const handler = withMcpAuth(auth, async (req, session) => {
                 portalUrl: portalSession.url,
                 message: "Click below to manage your subscription",
               }
-            ) as ManageSubscriptionResponse;
+            );
           } catch (error) {
             logger.error("manage_subscription failed", { error });
             return createErrorResponse(
               "Failed to load subscription details"
-            ) as ManageSubscriptionResponse;
+            );
           }
         }
       );
@@ -625,7 +631,7 @@ const handler = withMcpAuth(auth, async (req, session) => {
       }
     );
     */
-  });
+  }) as unknown as Promise<Response>;
 });
 
 export const POST = handler;

@@ -13,11 +13,11 @@
 
 "use client";
 
-import { useWidgetProps } from "@openai/widget-sdk";
+import { useWidgetProps } from "@/src/use-widget-props";
 import { checkWidgetAuth } from "@/src/utils/widget-auth-check";
 import type { UserItemsContent } from "@/lib/types/tool-responses";
 
-interface ToolOutput {
+interface ToolOutput extends Record<string, unknown> {
   structuredContent: UserItemsContent;
 }
 
@@ -59,7 +59,7 @@ export default function UserItemsWidget() {
         </div>
       ) : (
         <div className="space-y-4">
-          {items.map((item) => (
+          {items.map((item: any) => (
             <div
               key={item.id}
               className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"

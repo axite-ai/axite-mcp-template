@@ -90,8 +90,8 @@ export interface OpenAIResponseMetadata {
  * This is what your tool handlers should return
  */
 export interface MCPToolResponse<
-  TStructuredContent = Record<string, unknown>,
-  TMetadata = Record<string, unknown>
+  TStructuredContent extends Record<string, unknown> = Record<string, unknown>,
+  TMetadata extends Record<string, unknown> = Record<string, unknown>
 > {
   /**
    * Content surfaced to both the model and the component
@@ -165,8 +165,8 @@ export const createResourceContent = (
  * Helper to create a complete MCP tool response with proper typing
  */
 export const createMCPResponse = <
-  TStructuredContent = Record<string, unknown>,
-  TMetadata = Record<string, unknown>
+  TStructuredContent extends Record<string, unknown> = Record<string, unknown>,
+  TMetadata extends Record<string, unknown> = Record<string, unknown>
 >(
   content: MCPContent[],
   options?: {

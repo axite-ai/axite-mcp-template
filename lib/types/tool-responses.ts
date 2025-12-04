@@ -11,7 +11,29 @@ import { z } from "zod";
 // ============================================================================
 
 /**
- * Common Auth/Error Response Schema
+ * Common Auth Challenge Content
+ * Used when a tool requires authentication or subscription
+ */
+export interface AuthChallengeContent extends Record<string, unknown> {
+  message: string;
+  featureName?: string;
+  error_message?: string;
+  pricingUrl?: string;
+  baseUrl?: string;
+  setupUrl?: string;
+}
+
+/**
+ * Auth Challenge Response Type
+ * Returned by requireAuth() helper and auth response builders
+ */
+export type AuthChallengeResponse = MCPToolResponse<
+  AuthChallengeContent,
+  OpenAIResponseMetadata
+>;
+
+/**
+ * Common Auth/Error Response Schema (for validation)
  * Used when a tool requires authentication or subscription
  */
 export const AuthResponseSchema = z.union([
@@ -43,7 +65,7 @@ export const AuthResponseSchema = z.union([
  * User Items List - GET operation
  * Demonstrates a simple data display tool
  */
-export interface UserItemsContent {
+export interface UserItemsContent extends Record<string, unknown> {
   items: Array<{
     id: string;
     title: string;
@@ -62,7 +84,7 @@ export interface UserItemsContent {
  * Manage Item - CRUD operations
  * Demonstrates create/update/delete operations
  */
-export interface ManageItemContent {
+export interface ManageItemContent extends Record<string, unknown> {
   item: {
     id: string;
     title: string;
@@ -81,7 +103,7 @@ export interface ManageItemContent {
  * Weather Data
  * Demonstrates external API integration
  */
-export interface WeatherContent {
+export interface WeatherContent extends Record<string, unknown> {
   location: string;
   current: {
     temperature: number;
@@ -103,7 +125,7 @@ export interface WeatherContent {
  * ROI Calculator
  * Demonstrates calculation/form-based tool
  */
-export interface ROICalculatorContent {
+export interface ROICalculatorContent extends Record<string, unknown> {
   inputs: {
     initialInvestment: number;
     years: number;
@@ -126,7 +148,7 @@ export interface ROICalculatorContent {
  * Subscription Management
  * Shows current subscription and billing portal link
  */
-export interface ManageSubscriptionContent {
+export interface ManageSubscriptionContent extends Record<string, unknown> {
   subscription: {
     plan: string;
     status: string;
@@ -146,12 +168,12 @@ export interface ManageSubscriptionContent {
 export type UserItemsResponse = MCPToolResponse<
   UserItemsContent,
   OpenAIResponseMetadata
->;
+> | AuthChallengeResponse;
 
 export type ManageItemResponse = MCPToolResponse<
   ManageItemContent,
   OpenAIResponseMetadata
->;
+> | AuthChallengeResponse;
 
 export type WeatherResponse = MCPToolResponse<
   WeatherContent,
@@ -166,7 +188,7 @@ export type ROICalculatorResponse = MCPToolResponse<
 export type ManageSubscriptionResponse = MCPToolResponse<
   ManageSubscriptionContent,
   OpenAIResponseMetadata
->;
+> | AuthChallengeResponse;
 
 // ============================================================================
 // TEMPLATE: Add your own tool response types below

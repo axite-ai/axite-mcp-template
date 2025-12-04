@@ -1,6 +1,6 @@
-# Testing Guide for AskMyMoney
+# Testing Guide
 
-This guide covers the comprehensive test suite for the AskMyMoney application. The test suite ensures that all critical functionality works correctly and that changes don't break existing features.
+This guide covers the comprehensive test suite for the application. The test suite ensures that all critical functionality works correctly and that changes don't break existing features.
 
 ## Table of Contents
 

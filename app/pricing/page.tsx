@@ -16,6 +16,7 @@ interface UpgradeRequestBody {
   subscriptionId?: string;
 }
 
+// TEMPLATE: Customize these subscription plans for your application
 // Define subscription plans based on your auth config
 const PLANS = [
   {
@@ -24,12 +25,11 @@ const PLANS = [
     price: "$9.99",
     priceMonthly: 9.99,
     interval: "month",
-    description: "Perfect for getting started with financial tracking",
+    description: "Perfect for getting started",
     features: [
-      "Up to 3 bank accounts",
-      "Transaction history",
-      "Spending insights",
-      "Account balance tracking",
+      "Core feature 1",
+      "Core feature 2",
+      "Core feature 3",
       "Email support",
     ],
     cta: "Get Started",
@@ -42,12 +42,12 @@ const PLANS = [
     price: "$19.99",
     priceMonthly: 19.99,
     interval: "month",
-    description: "Advanced features for serious money management",
+    description: "Advanced features for power users",
     features: [
-      "Up to 10 bank accounts",
       "All Basic features",
-      "Account health monitoring",
-      "Advanced spending analytics",
+      "Advanced feature 1",
+      "Advanced feature 2",
+      "Advanced feature 3",
       "14-day free trial",
       "Priority support",
     ],
@@ -61,14 +61,14 @@ const PLANS = [
     price: "$49.99",
     priceMonthly: 49.99,
     interval: "month",
-    description: "Everything you need for complete financial control",
+    description: "Everything you need for your organization",
     features: [
-      "Unlimited bank accounts",
       "All Pro features",
       "Custom reporting",
       "API access",
       "Dedicated support",
       "Custom integrations",
+      "SLA guarantee",
     ],
     cta: "Get Started",
     popular: false,
@@ -178,7 +178,7 @@ export default function PricingPage() {
             Choose Your Plan
           </h1>
           <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-            Get started with AskMyMoney and take control of your finances with AI-powered insights
+            Get started and unlock powerful features with AI-powered insights
           </p>
         </div>
 
@@ -194,7 +194,7 @@ export default function PricingPage() {
                   Sign In Required
                 </h3>
                 <p className="text-gray-300 mb-4">
-                  To subscribe to a plan, please sign in to your AskMyMoney account first.
+                  To subscribe to a plan, please sign in to your account first.
                 </p>
                 <a
                   href="/login"
@@ -340,11 +340,11 @@ export default function PricingPage() {
         {/* FAQ or Additional Info */}
         <div className="text-center text-gray-400 text-sm">
           <p className="mb-2">
-            All plans include secure bank connections via Plaid and 256-bit encryption
+            All plans include 256-bit encryption and secure data handling
           </p>
           <p>
             Have questions?{" "}
-            <a href="mailto:support@askmymoney.ai" className="text-blue-400 hover:text-blue-300">
+            <a href={`mailto:${process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'support@example.com'}`} className="text-blue-400 hover:text-blue-300">
               Contact our support team
             </a>
           </p>

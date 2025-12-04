@@ -15,7 +15,7 @@ test.describe('Critical User Journeys', () => {
   test.describe('Authentication Flow', () => {
     test('should load the login page', async ({ page }) => {
       await page.goto('/login');
-      await expect(page).toHaveTitle(/AskMyMoney|Login/);
+      await expect(page).toHaveTitle(/Login/);
       await expect(page.locator('form')).toBeVisible();
     });
 

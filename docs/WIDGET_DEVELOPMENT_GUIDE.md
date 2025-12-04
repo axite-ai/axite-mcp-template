@@ -1,6 +1,6 @@
-# AskMyMoney GPT Widget Playbook
+# ChatGPT Widget Development Guide
 
-This guide documents the exact patterns, anti-patterns, and metadata requirements for building ChatGPT widgets in the AskMyMoney repo. It synthesizes the OpenAI Apps SDK reference in `llm_context/appssdk/APPS_SDK_DOCS.txt` with the production implementations under `app/mcp/route.ts`, `app/widgets/*`, and `src/components/*`. Use it before touching MCP tools or widgets so that every surface behaves consistently inside ChatGPT/Claude.
+This guide documents the exact patterns, anti-patterns, and metadata requirements for building ChatGPT widgets. It synthesizes the OpenAI Apps SDK reference in `llm_context/appssdk/APPS_SDK_DOCS.txt` with the production implementations under `app/mcp/route.ts`, `app/widgets/*`, and `src/components/*`. Use it before touching MCP tools or widgets so that every surface behaves consistently inside ChatGPT/Claude.
 
 ---
 
@@ -233,7 +233,7 @@ Tools often need to decide between radically different widgets (e.g., show Subsc
      - [ ] Set `annotations.readOnlyHint` / `destructiveHint` / `openWorldHint`.
 3. **Register the widget resource**
    - [ ] Add an entry to the `widgets` array (resource id, description, Next.js path, CSP).
-   - [ ] Audit CSP allowlists—only include domains you actually load (Plaid, Stripe, AskMyMoney, OpenAI assets).
+   - [ ] Audit CSP allowlists—only include domains you actually load (third-party services, OpenAI assets).
    - [ ] Create `app/widgets/<widget>/page.tsx` that renders your client component.
 4. **Build the client component**
    - [ ] Create `src/components/<widget>/index.tsx` with `useWidgetProps`, `checkWidgetAuth`, and `WidgetLoadingSkeleton`.

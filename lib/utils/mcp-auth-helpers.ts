@@ -5,6 +5,7 @@
  * Reduces boilerplate and ensures consistency across all tools.
  */
 
+import type { AuthChallengeResponse } from "@/lib/types/tool-responses";
 import { hasActiveSubscription } from "./subscription-helpers";
 import {
   createLoginPromptResponse,
@@ -72,7 +73,7 @@ export async function requireAuth(
   session: { userId: string } | null | undefined,
   featureName: string,
   options: AuthRequirements = {}
-) {
+): Promise<AuthChallengeResponse | null> {
   const {
     requireSubscription = FEATURES.SUBSCRIPTIONS, // Default to true only if subscriptions enabled
     requireSecurity = false,

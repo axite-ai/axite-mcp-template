@@ -1,10 +1,10 @@
 "use client";
 
-import { useWidgetProps } from "@openai/widget-sdk";
+import { useWidgetProps } from "@/src/use-widget-props";
 import { checkWidgetAuth } from "@/src/utils/widget-auth-check";
 import type { ManageItemContent } from "@/lib/types/tool-responses";
 
-interface ToolOutput {
+interface ToolOutput extends Record<string, unknown> {
   structuredContent: ManageItemContent;
 }
 
@@ -25,14 +25,14 @@ export default function ManageItemWidget() {
 
   const { item, action, message } = toolOutput.structuredContent;
 
-  const actionColors = {
+  const actionColors: Record<string, string> = {
     created: "bg-green-50 border-green-200 text-green-900",
     updated: "bg-blue-50 border-blue-200 text-blue-900",
     deleted: "bg-red-50 border-red-200 text-red-900",
     archived: "bg-gray-50 border-gray-200 text-gray-900",
   };
 
-  const actionIcons = {
+  const actionIcons: Record<string, string> = {
     created: "✅",
     updated: "✏️",
     deleted: "🗑️",

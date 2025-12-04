@@ -77,14 +77,14 @@ const REQUIRED_WITH_FALLBACK = [
 ] as const;
 
 /**
- * Recommended but optional environment variables
+ * TEMPLATE: Recommended but optional environment variables
+ * Customize these for your application's third-party integrations
  */
 const RECOMMENDED_ENV_VARS = [
-  { name: "PLAID_CLIENT_ID", description: "Plaid API client ID" },
-  { name: "PLAID_SECRET", description: "Plaid API secret" },
-  { name: "PLAID_ENV", description: "Plaid environment (sandbox/production)" },
-  { name: "STRIPE_SECRET_KEY", description: "Stripe API secret key" },
-  { name: "STRIPE_WEBHOOK_SECRET", description: "Stripe webhook signing secret" },
+  // Example: Third-party service integrations (customize for your app)
+  // { name: "YOUR_SERVICE_API_KEY", description: "Your service API key" },
+  { name: "STRIPE_SECRET_KEY", description: "Stripe API secret key (if using subscriptions)" },
+  { name: "STRIPE_WEBHOOK_SECRET", description: "Stripe webhook signing secret (if using subscriptions)" },
 ] as const;
 
 /**
@@ -142,7 +142,6 @@ export function validateEnvironmentVariables(): EnvValidationResult {
     // Warn about other missing variables
     const securityVars = [
       "BETTER_AUTH_SECRET",
-      "PLAID_WEBHOOK_SECRET",
       "ENCRYPTION_KEY",
     ];
     for (const varName of securityVars) {

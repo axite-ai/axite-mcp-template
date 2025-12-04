@@ -13,7 +13,7 @@ import * as schema from '@/lib/db/schema';
  */
 export const createTestPool = () => {
   return new Pool({
-    connectionString: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/askmymoney_test',
+    connectionString: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/axite_mcp_test',
     ssl: process.env.POSTGRES_SSL === 'true' ? { rejectUnauthorized: false } : false,
   });
 };

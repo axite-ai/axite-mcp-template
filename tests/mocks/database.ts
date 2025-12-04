@@ -60,10 +60,11 @@ export const mockUsers = {
     createdAt: new Date(),
     updatedAt: new Date(),
   },
-  withPlaid: {
-    id: 'user_with_plaid_789',
-    email: 'plaid@example.com',
-    name: 'Plaid User',
+  // TEMPLATE: Example user for testing third-party integrations
+  withIntegration: {
+    id: 'user_with_integration_789',
+    email: 'integration@example.com',
+    name: 'Integration User',
     emailVerified: true,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -88,7 +89,7 @@ export const mockSubscriptions = {
   },
   trialing: {
     id: 'sub_456',
-    referenceId: mockUsers.withPlaid.id,
+    referenceId: mockUsers.withIntegration.id,
     stripeSubscriptionId: 'sub_stripe_456',
     plan: 'pro',
     status: 'trialing',
@@ -102,16 +103,17 @@ export const mockSubscriptions = {
 };
 
 /**
- * Mock Plaid items
+ * TEMPLATE: Example third-party integration items (from previous Plaid integration)
+ * Replace or remove this based on your application's needs
  */
-export const mockPlaidItems = {
+export const mockIntegrationItems = {
   item1: {
-    id: 'plaid_item_123',
-    userId: mockUsers.withPlaid.id,
-    plaidItemId: 'item_plaid_123',
+    id: 'integration_item_123',
+    userId: mockUsers.withIntegration.id,
+    externalId: 'item_external_123',
     accessToken: 'access-sandbox-encrypted-token',
-    institutionId: 'ins_1',
-    institutionName: 'Chase Bank',
+    providerId: 'provider_1',
+    providerName: 'Example Provider',
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -140,8 +142,8 @@ export const setupDbMocks = (mockClient: ReturnType<typeof createMockDbClient>) 
       });
     },
 
-    // Plaid items queries
-    mockPlaidItemsQuery: (items: Array<typeof mockPlaidItems.item1>) => {
+    // Integration items queries (TEMPLATE: customize for your app)
+    mockIntegrationItemsQuery: (items: Array<typeof mockIntegrationItems.item1>) => {
       mockClient.query.mockResolvedValueOnce({ rows: items, rowCount: items.length });
     },
 

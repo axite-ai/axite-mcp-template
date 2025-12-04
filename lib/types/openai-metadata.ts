@@ -47,6 +47,7 @@ export interface OpenAIMetadata {
 
 /**
  * Tool execution context combining authentication and OpenAI metadata
+ * TEMPLATE: Customize this interface for your application's needs
  */
 export interface ToolExecutionContext {
   // Authentication
@@ -56,46 +57,9 @@ export interface ToolExecutionContext {
   // OpenAI metadata (optional - may not be present in all requests)
   metadata?: OpenAIMetadata;
 
-  // Plaid access tokens for this user
-  plaidAccessTokens: string[];
-}
-
-/**
- * Response metadata for OpenAI Apps SDK
- */
-export interface OpenAIResponseMetadata {
-  /**
-   * Text shown while tool is executing
-   * e.g., "Fetching your account balances..."
-   */
-  'openai/toolInvocation/invoking': string;
-
-  /**
-   * Text shown when tool completes
-   * e.g., "Retrieved 3 accounts"
-   */
-  'openai/toolInvocation/invoked': string;
-
-  /**
-   * Whether this response can be rendered as a widget
-   */
-  'openai/widgetAccessible': boolean;
-
-  /**
-   * Whether this tool result can produce a UI widget
-   */
-  'openai/resultCanProduceWidget': boolean;
-
-  /**
-   * Optional: URI template for the widget
-   * e.g., "ui://widget/account-balances.html"
-   */
-  'openai/outputTemplate'?: string;
-
-  /**
-   * Allow additional metadata fields
-   */
-  [key: string]: unknown;
+  // TEMPLATE: Third-party service tokens (example from previous Plaid integration)
+  // Rename or replace with your own integration tokens as needed
+  plaidAccessTokens?: string[];
 }
 
 /**

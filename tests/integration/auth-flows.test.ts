@@ -286,11 +286,11 @@ describe('Authentication Flows', () => {
 
     it('should include required OpenID configuration', () => {
       const config = {
-        issuer: 'https://dev.askmymoney.ai',
-        authorization_endpoint: 'https://dev.askmymoney.ai/api/auth/oauth/authorize',
-        token_endpoint: 'https://dev.askmymoney.ai/api/auth/oauth/token',
-        userinfo_endpoint: 'https://dev.askmymoney.ai/api/auth/oauth/userinfo',
-        jwks_uri: 'https://dev.askmymoney.ai/api/auth/.well-known/jwks.json',
+        issuer: 'http://localhost:3000',
+        authorization_endpoint: 'http://localhost:3000/api/auth/oauth/authorize',
+        token_endpoint: 'http://localhost:3000/api/auth/oauth/token',
+        userinfo_endpoint: 'http://localhost:3000/api/auth/oauth/userinfo',
+        jwks_uri: 'http://localhost:3000/api/auth/.well-known/jwks.json',
         scopes_supported: [
           'openid',
           'profile',

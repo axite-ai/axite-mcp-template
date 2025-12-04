@@ -1,9 +1,9 @@
 "use client";
 
-import { useWidgetProps } from "@openai/widget-sdk";
+import { useWidgetProps } from "@/src/use-widget-props";
 import type { WeatherContent } from "@/lib/types/tool-responses";
 
-interface ToolOutput {
+interface ToolOutput extends Record<string, unknown> {
   structuredContent: WeatherContent;
 }
 
@@ -47,7 +47,7 @@ export default function WeatherWidget() {
         <div>
           <h3 className="text-lg font-semibold mb-3">3-Day Forecast</h3>
           <div className="grid grid-cols-3 gap-3">
-            {forecast.map((day, idx) => (
+            {forecast.map((day: any, idx: number) => (
               <div key={idx} className="bg-gray-50 rounded-lg p-4 text-center">
                 <div className="font-semibold text-gray-900">{day.day}</div>
                 <div className="text-sm text-gray-600 my-2">{day.condition}</div>

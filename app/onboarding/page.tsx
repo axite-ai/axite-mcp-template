@@ -59,7 +59,7 @@ function OnboardingContent() {
         <div>
           <h2 className="mt-6 heading-lg text-default">Secure Your Account</h2>
           <p className="mt-2 text-sm text-secondary">
-            Create a passkey to secure your financial data with biometric authentication.
+            Create a passkey to secure your account with biometric authentication.
           </p>
         </div>
 
@@ -86,7 +86,7 @@ function OnboardingContent() {
 
           <p className="text-xs text-secondary mt-4">
             <ShieldCheck className="w-3 h-3 inline-block mr-1" />
-            Required for accessing financial data and bank connections
+            Required for accessing protected features and data
           </p>
         </div>
       </div>

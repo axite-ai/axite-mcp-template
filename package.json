@@ -4,6 +4,16 @@
   "private": false,
   "description": "Production-ready starter template for building ChatGPT MCP apps with Next.js, Better Auth, and optional Stripe subscriptions",
   "keywords": ["mcp", "chatgpt", "openai", "template", "starter", "nextjs", "better-auth", "oauth"],
+  "author": "Axite Contributors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/axite-mcp-template"
+  },
+  "homepage": "https://github.com/yourusername/axite-mcp-template#readme",
+  "bugs": {
+    "url": "https://github.com/yourusername/axite-mcp-template/issues"
+  },
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",

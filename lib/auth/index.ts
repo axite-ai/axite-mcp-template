@@ -73,7 +73,7 @@ let baseURL =
   `${stripTrailingSlash(appOrigin)}${authBasePath}`;
 
 // Ensure baseURL includes the authBasePath (e.g. /api/auth)
-// This fixes 404s when BETTER_AUTH_URL is set to the root domain (e.g. https://dev.askmymoney.ai)
+// This fixes 404s when BETTER_AUTH_URL is set to the root domain
 // but Better Auth expects the full path to the auth endpoints for routing.
 if (!baseURL.endsWith(authBasePath)) {
   baseURL = `${stripTrailingSlash(baseURL)}${authBasePath}`;
@@ -142,7 +142,7 @@ export const auth = betterAuth({
 
   // Advanced cookie configuration for cross-site redirects
   advanced: {
-    useSecureCookies: true, // Always use secure cookies for HTTPS (dev.askmymoney.ai uses HTTPS)
+    useSecureCookies: true, // Always use secure cookies for HTTPS
     cookies: {
       session_token: {
         attributes: {
@@ -160,7 +160,7 @@ export const auth = betterAuth({
   },
 
   // Application name (used as issuer for TOTP)
-  appName: "AskMyMoney",
+  appName: "Axite MCP",
 
   // Social OAuth providers
   socialProviders: {
