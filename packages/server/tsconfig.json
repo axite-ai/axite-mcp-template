@@ -14,7 +14,6 @@
     "declarationMap": true,
     "sourceMap": true,
     "noEmit": true,
-    "baseUrl": ".",
     "paths": {
       "@axite/shared": ["../shared/src/index.ts"],
       "@axite/shared/*": ["../shared/src/*"]
