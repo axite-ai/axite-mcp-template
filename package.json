@@ -25,6 +25,7 @@
     "start": "pnpm run --parallel start:server start:web",
     "start:server": "pnpm --filter @axite/server start",
     "start:web": "pnpm --filter @axite/web start",
+    "mock:mcp": "node mock-oauth-server.js",
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm -r lint",
     "test": "pnpm -r test",
@@ -38,7 +39,8 @@
     "db:push": "pnpm --filter @axite/server db:push",
     "db:studio": "pnpm --filter @axite/server db:studio",
     "clean": "rm -rf node_modules packages/*/node_modules packages/*/dist packages/web/.next",
-    "prepare": "pnpm build:shared"
+    "prepare": "pnpm build:shared",
+    "mock:mcp": "node mock-oauth-server.js"
   },
   "devDependencies": {
     "typescript": "^5"
