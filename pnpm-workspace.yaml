@@ -1,0 +1,17 @@
+packages:
+  - "packages/*"
+
+catalog:
+  # Shared dependencies across packages
+  "@modelcontextprotocol/sdk": ^1.20.0
+  "@openai/apps-sdk": ^0.4.0
+  zod: ^3.24.1
+  drizzle-orm: ^0.39.2
+  better-auth: ^1.8.0
+
+  # Build tools
+  typescript: ^5.7.0
+
+  # Testing
+  vitest: ^3.0.5
+  "@playwright/test": ^1.49.1

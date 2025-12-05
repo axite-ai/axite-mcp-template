@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+@layer utilities {
+  .overflow-auto > *,
+  .overflow-scroll > *,
+  .overflow-x-auto > *,
+  .overflow-y-auto > * {
+    scrollbar-color: auto;
+  }
+
+  /* Base style for scrollable elements */
+  .overflow-auto,
+  .overflow-scroll,
+  .overflow-x-auto,
+  .overflow-y-auto,
+  .overflow-x-scroll,
+  .overflow-y-scroll {
+    scrollbar-color: var(--color-border-subtle) transparent;
+
+    @media (prefers-color-scheme: dark) {
+      scrollbar-color: var(--color-border-subtle) transparent;
+    }
+  }
+
+  /* Hover state directly on the scrollable element */
+  .overflow-auto:hover,
+  .overflow-scroll:hover,
+  .overflow-x-auto:hover,
+  .overflow-y-auto:hover {
+    scrollbar-color: var(--color-border) transparent;
+
+    @media (prefers-color-scheme: dark) {
+      scrollbar-color: var(--color-border) transparent;
+    }
+  }
+}

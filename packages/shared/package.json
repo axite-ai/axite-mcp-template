@@ -1,0 +1,39 @@
+{
+  "name": "@axite/shared",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared types and utilities for Axite MCP Template",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./types": {
+      "types": "./src/types/index.ts",
+      "default": "./src/types/index.ts"
+    },
+    "./utils": {
+      "types": "./src/utils/index.ts",
+      "default": "./src/utils/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "echo 'Shared package uses source directly - no build needed'",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "zod": "3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@vitest/coverage-v8": "^4.0.9",
+    "typescript": "^5",
+    "vitest": "^4.0.9"
+  }
+}

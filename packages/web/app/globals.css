@@ -1,0 +1,29 @@
+@import "tailwindcss";
+@import "@openai/apps-sdk-ui/css";
+/* Required for Tailwind to find class references in Apps SDK UI components. */
+@source "../node_modules/@openai/apps-sdk-ui";
+
+/* -------------------------------------- */
+/* Root Variables */
+/* -------------------------------------- */
+
+/*
+  Apps SDK UI provides a comprehensive set of CSS variables for theming.
+  We rely on the SDK's tokens for consistency.
+
+  See: https://openai.github.io/apps-sdk-ui/?path=/docs/foundations-design-tokens--docs
+*/
+
+/* Tailwind v4 theme tokens - mapping to Apps SDK UI tokens where possible */
+@theme inline {
+  --color-background: var(--color-surface);
+  --color-foreground: var(--color-text);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+}
+
+body {
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+}

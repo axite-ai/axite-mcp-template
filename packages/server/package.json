@@ -1,0 +1,48 @@
+{
+  "name": "@axite/server",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "MCP Server for Axite MCP Template",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "@axite/shared": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.20.0",
+    "@paralleldrive/cuid2": "^3.0.4",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "drizzle-orm": "^0.44.7",
+    "express": "^5.1.0",
+    "ioredis": "^5.8.1",
+    "jose": "^6.1.3",
+    "pg": "^8.16.3",
+    "stripe": "^19.3.1",
+    "winston": "^3.18.3",
+    "zod": "3.24.2"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.2",
+    "@types/node": "^20",
+    "@types/pg": "^8.15.5",
+    "@vitest/coverage-v8": "^4.0.9",
+    "drizzle-kit": "^0.31.7",
+    "tsx": "^4.20.6",
+    "typescript": "^5",
+    "vitest": "^4.0.9"
+  }
+}
