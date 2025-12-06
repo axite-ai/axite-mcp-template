@@ -57,22 +57,6 @@ Your MCP server is now running at `http://localhost:3000/mcp`
 
 If you deploy the server separately, set `MCP_SERVER_URL` to the full MCP endpoint (including the `/mcp` path), for example `http://localhost:3001/mcp`.
 
-For quick local testing without a real backend, you can run a mock MCP server (includes OAuth-style 401 challenge and two tools: `ping`, `echo`):
-
-```bash
-pnpm mock:mcp          # starts mock server at http://localhost:3001/mcp
-pnpm dev               # proxy stays pointed at http://localhost:3001/mcp by default
-
-# Test unauth (401 + WWW-Authenticate)
-curl -i -X POST http://localhost:3000/mcp -H "Content-Type: application/json" -d '{}'
-
-# Test auth success
-curl -i -X POST http://localhost:3000/mcp \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer token123" \
-  -d '{}'
-```
-
 ## 📚 What's Included
 
 ### MCP Tools (5 examples)
@@ -119,6 +103,12 @@ pnpm test             # Run tests
 │   └── utils/             # Helpers
 └── src/components/        # Widget components
 ```
+
+## 📖 Documentation
+
+- **[CLAUDE.md](CLAUDE.md)** - Comprehensive development guide
+- **[docs/MCP-PATTERNS.md](docs/MCP-PATTERNS.md)** - MCP best practices for this template
+- **[docs/mcp-builder/](docs/mcp-builder/)** - General MCP development reference
 
 ## 📖 Adding Your Own Tools
 

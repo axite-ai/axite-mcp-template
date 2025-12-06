@@ -1,9 +1,11 @@
 /**
  * Type definitions for tool-specific structured content
  * TEMPLATE: Define your own tool response types here
+ *
+ * Implements MCP best practices from docs/mcp-builder/reference/mcp_best_practices.md
  */
 
-import type { MCPToolResponse, OpenAIResponseMetadata } from "./mcp-responses";
+import type { MCPToolResponse, OpenAIResponseMetadata, PaginationMeta } from "./mcp-responses";
 import { z } from "zod";
 
 // ============================================================================
@@ -63,7 +65,10 @@ export const AuthResponseSchema = z.union([
 
 /**
  * User Items List - GET operation
- * Demonstrates a simple data display tool
+ * Demonstrates a simple data display tool with proper pagination.
+ *
+ * MCP Best Practice: Include pagination metadata for list responses.
+ * See: docs/mcp-builder/reference/mcp_best_practices.md#pagination
  */
 export interface UserItemsContent extends Record<string, unknown> {
   items: Array<{
@@ -76,8 +81,8 @@ export interface UserItemsContent extends Record<string, unknown> {
     createdAt: string;
     updatedAt: string;
   }>;
-  totalItems: number;
-  displayedItems: number;
+  /** Pagination metadata - MCP best practice for list responses */
+  pagination: PaginationMeta;
 }
 
 /**

@@ -67,13 +67,6 @@ export function loadEnv(): Env {
   const serverEnvPath = path.resolve(__dirname, "../../.env");
   config({ path: serverEnvPath, override: false });
 
-  // In development, provide minimal fallbacks so the proxy can start without manual env setup
-  if ((process.env.NODE_ENV ?? "development") !== "production") {
-    process.env.DATABASE_URL ??= "postgresql://user:pass@localhost:5432/devdb";
-    process.env.REDIS_URL ??= "redis://localhost:6379";
-    process.env.BETTER_AUTH_SECRET ??= "development-secret-key-that-is-32-chars";
-  }
-
   try {
     env = envSchema.parse(process.env);
     return env;

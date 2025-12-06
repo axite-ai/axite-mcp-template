@@ -42,14 +42,16 @@ export default function UserItemsWidget() {
     );
   }
 
-  const { items, totalItems } = toolOutput.structuredContent;
+  const { items, pagination } = toolOutput.structuredContent;
+  const totalItems = pagination.total_count;
 
   return (
     <div className="p-6">
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Your Items</h2>
         <p className="text-sm text-gray-600 mt-1">
-          {totalItems} item{totalItems !== 1 ? "s" : ""} total
+          {pagination.count} of {totalItems} item{totalItems !== 1 ? "s" : ""}
+          {pagination.has_more && " (more available)"}
         </p>
       </div>
 

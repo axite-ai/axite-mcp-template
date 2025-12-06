@@ -473,6 +473,45 @@ Tests use a dedicated test database (`axite_mcp_test`) that is created/dropped a
 
 See `docs/TESTING.md` for comprehensive testing guide.
 
+## MCP Best Practices
+
+This template implements patterns from `docs/mcp-builder/`, which contains general MCP development best practices. See `docs/MCP-PATTERNS.md` for the template-specific implementation guide.
+
+### Key Patterns Applied
+
+**Tool Naming**: All tools use `{service}_action_resource` format with a placeholder prefix:
+```typescript
+"{service}_get_user_items"  // TODO: Replace {service} with your app name
+```
+
+**Tool Annotations**: All tools include four required annotations:
+```typescript
+{
+  annotations: {
+    readOnlyHint: true,      // Does this tool only read data?
+    destructiveHint: false,  // Can this tool delete data?
+    idempotentHint: true,    // Same input = same output?
+    openWorldHint: false,    // Does this tool call external APIs?
+  },
+}
+```
+
+**Pagination**: List tools include `limit`/`offset` parameters and return pagination metadata:
+```typescript
+const pagination = calculatePagination(totalCount, offset, limit, items.length);
+// Returns: { total_count, count, offset, limit, has_more, next_offset }
+```
+
+**Response Formats**: Tools support `response_format` parameter for markdown or JSON output.
+
+**Character Limits**: Use `truncateIfNeeded()` to prevent overwhelming responses (25,000 char limit).
+
+### Reference Documentation
+
+- `docs/MCP-PATTERNS.md` - Template-specific implementation guide
+- `docs/mcp-builder/reference/mcp_best_practices.md` - Core MCP standards
+- `docs/mcp-builder/reference/node_mcp_server.md` - TypeScript implementation guide
+
 ## Development Guidelines
 
 - Use server actions over API routes whenever possible
@@ -480,7 +519,8 @@ See `docs/TESTING.md` for comprehensive testing guide.
 - Run `pnpm typecheck` before committing
 - Follow the widget hydration pattern (no server actions on mount)
 - Use the `requireAuth()` helper for consistent auth checks
-- Mark customization points with `// TEMPLATE:` comments
+- Follow MCP best practices for tool naming, annotations, and responses
+- Mark customization points with `// TEMPLATE:` or `// TODO:` comments
 
 ## Template Customization
 

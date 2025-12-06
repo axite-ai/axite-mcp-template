@@ -1,7 +1,34 @@
 /**
  * Type definitions for MCP tool responses following the OpenAI Apps SDK specification
  * Based on: https://modelcontextprotocol.io/specification/2025-06-18/server/tools
+ *
+ * Implements patterns from docs/mcp-builder/reference/mcp_best_practices.md
  */
+
+// ============================================================================
+// PAGINATION TYPES
+// MCP Best Practice: Always include pagination metadata for list responses
+// See: docs/mcp-builder/reference/mcp_best_practices.md#pagination
+// ============================================================================
+
+/**
+ * Standard pagination metadata for list responses.
+ * Include this in any tool that returns collections of items.
+ */
+export interface PaginationMeta {
+  /** Total number of items available (across all pages) */
+  total_count: number;
+  /** Number of items in this response */
+  count: number;
+  /** Current offset (number of items skipped) */
+  offset: number;
+  /** Maximum items per page (from request) */
+  limit: number;
+  /** Whether more items exist beyond this page */
+  has_more: boolean;
+  /** Offset to use for the next page (only present if has_more is true) */
+  next_offset?: number;
+}
 
 /**
  * Content types that can be returned in MCP responses

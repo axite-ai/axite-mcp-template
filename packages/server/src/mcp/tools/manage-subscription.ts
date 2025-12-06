@@ -2,7 +2,14 @@
  * Manage Subscription Tool
  *
  * View subscription status and access billing portal.
- * Demonstrates: Stripe integration, conditional registration
+ * Demonstrates: Stripe integration, conditional registration, external API
+ *
+ * MCP Best Practices implemented:
+ * - Tool naming with {service}_ prefix placeholder
+ * - All four tool annotations (note: openWorldHint is true for Stripe API)
+ * - Actionable error messages
+ *
+ * See: docs/mcp-builder/reference/mcp_best_practices.md
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -23,6 +30,8 @@ const stripe = FEATURES.SUBSCRIPTIONS
 
 /**
  * Register the manage_subscription tool (only if subscriptions are enabled)
+ *
+ * TODO: Replace {service} with your app name (e.g., myapp_manage_subscription)
  */
 export function registerManageSubscriptionTool(server: McpServer, context: McpContext): void {
   // Only register if subscriptions are enabled
@@ -34,9 +43,23 @@ export function registerManageSubscriptionTool(server: McpServer, context: McpCo
   const WEB_URL = process.env.WEB_URL || "http://localhost:3000";
 
   server.tool(
-    "manage_subscription",
-    "View your current subscription and access the billing portal to update payment methods or cancel.",
+    // MCP Best Practice: Tool names use {service}_action_resource format
+    // TODO: Replace {service} with your app name
+    "{service}_manage_subscription",
+    `View your current subscription and access the billing portal.
+
+Shows subscription status, plan details, and provides a link to the
+Stripe billing portal for updating payment methods or cancellation.
+
+No parameters required - uses authenticated user's subscription.
+
+Returns subscription details and portal URL.`,
     {},
+    // MCP Best Practice: Tool annotations (when SDK supports them)
+    // readOnlyHint: false     - Portal session creation is a write operation
+    // destructiveHint: false  - Viewing doesn't destroy data
+    // idempotentHint: false   - Portal sessions are unique each time
+    // openWorldHint: true     - Calls Stripe API
     async (): Promise<ManageSubscriptionResponse> => {
       try {
         // Check authentication (no subscription required to view subscription!)
@@ -118,7 +141,12 @@ export function registerManageSubscriptionTool(server: McpServer, context: McpCo
         }
       } catch (error) {
         logger.error("manage_subscription failed", { error });
-        return createErrorResponse("Failed to load subscription details");
+        // MCP Best Practice: Actionable error messages
+        return createErrorResponse(
+          error instanceof Error
+            ? `Failed to load subscription: ${error.message}. Please try again or contact support.`
+            : "Failed to load subscription details. Please try again."
+        );
       }
     }
   );
