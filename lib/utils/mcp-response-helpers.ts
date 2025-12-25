@@ -9,6 +9,9 @@ import type {
 } from "@/lib/types/mcp-responses";
 import type { AuthChallengeContent } from "@/lib/types/tool-responses";
 import { createTextContent } from "@/lib/types/mcp-responses";
+import { createUIResource } from '@mcp-ui/server';
+import type { CreateUIResourceOptions } from '@mcp-ui/server';
+import { baseURL } from "@/baseUrl";
 
 /**
  * Creates a generic error response that matches AuthChallengeContent structure
@@ -31,16 +34,58 @@ export const createErrorResponse = (
 
 /**
  * Creates a success response with structured content
+ * Automatically creates UIResource for widget-enabled tools using Apps SDK adapter
  */
 export const createSuccessResponse = <T extends Record<string, unknown>>(
   text: string,
   structuredContent: T,
   meta?: Partial<OpenAIResponseMetadata>
-) => ({
-  content: [createTextContent(text)],
-  structuredContent,
-  ...(meta && { _meta: meta })
-});
+): MCPToolResponse<T, OpenAIResponseMetadata> => {
+  const {
+    "openai/outputTemplate": outputTemplate,
+    ...otherMeta
+  } = meta || {};
+
+  // If there's an outputTemplate, create UIResource with Apps SDK adapter
+  if (outputTemplate) {
+    const widgetPath = outputTemplate.replace('ui://widget/', '').replace('.html', '');
+
+    // Use @mcp-ui/server to create resource with Apps SDK adapter
+    const resourceOptions: CreateUIResourceOptions = {
+      uri: outputTemplate.replace('.html', '') as `ui://${string}`,
+      content: {
+        type: 'externalUrl',
+        iframeUrl: `${baseURL}/widgets/${widgetPath}`,
+      },
+      encoding: 'text',
+      adapters: {
+        appsSdk: {
+          enabled: true,
+          config: {}
+        }
+      }
+    };
+
+    const uiResource = createUIResource(resourceOptions);
+
+    return {
+      content: [{
+        type: "resource" as const,
+        resource: uiResource.resource
+      }],
+      structuredContent,
+      _meta: otherMeta as OpenAIResponseMetadata,
+      isError: false,
+    };
+  }
+
+  // Fallback for non-widget responses
+  return {
+    content: [createTextContent(text)],
+    structuredContent,
+    ...(meta && { _meta: meta as OpenAIResponseMetadata })
+  };
+};
 
 /**
  * Creates an authentication challenge response

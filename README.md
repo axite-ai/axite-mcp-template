@@ -68,7 +68,7 @@ export default function MyToolPage() {
 
 ```tsx
 "use client";
-import { useToolInfo } from "@/src/skybridge";
+import { useToolInfo } from "@/src/mcp-ui-hooks";
 
 export default function MyWidget() {
   // Types are automatically inferred!
@@ -82,7 +82,7 @@ export default function MyWidget() {
 ## 📚 Documentation
 
 - `app/mcp/route.ts` - Main server entry point
-- `src/skybridge.ts` - Type definitions and hooks
+- `src/mcp-ui-hooks.ts` - Type definitions and hooks
 - `lib/db/schema.ts` - Database schema
 
 ## 📄 License

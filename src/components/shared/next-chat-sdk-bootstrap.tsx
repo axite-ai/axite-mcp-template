@@ -66,8 +66,8 @@ export function NextChatSDKBootstrap({ baseUrl }: { baseUrl: string }) {
                   url.origin != appOrigin
                 ) {
                   try {
-                    if (window.openai) {
-                      window.openai?.openExternal({ href: a.href });
+                    if (window.openai && 'openExternal' in window.openai && typeof window.openai.openExternal === 'function') {
+                      window.openai.openExternal({ href: a.href });
                       e.preventDefault();
                     }
                   } catch {

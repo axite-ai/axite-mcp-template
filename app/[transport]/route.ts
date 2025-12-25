@@ -18,13 +18,7 @@ import { auth } from "@/lib/auth";
 import { baseURL } from "@/baseUrl";
 import { logger } from "@/lib/services/logger-service";
 import { createMcpHandler } from "mcp-handler";
-
-// Helper to fetch HTML from Next.js pages (Vercel template pattern)
-const getWidgetHtml = async (path: string) => {
-  const result = await fetch(`${baseURL}${path}`);
-  if (!result.ok) throw new Error(`Failed to fetch widget: ${result.statusText}`);
-  return await result.text();
-};
+import { createSuccessResponse } from "@/lib/utils/mcp-response-helpers";
 
 // ============================================================================
 // TOOL DEFINITIONS
@@ -42,14 +36,18 @@ const tools = {
     // Mark as read-only (doesn't modify data)
     readOnly: true,
     handler: async ({ name = "World" }: { name?: string }) => {
-      return {
-        content: [{ type: "text" as const, text: `Hello, ${name}!` }],
-        structuredContent: {
+      return createSuccessResponse(
+        `Hello, ${name}!`,
+        {
           greeting: `Hello, ${name}!`,
           name,
           timestamp: new Date().toISOString(),
         },
-      };
+        {
+          "openai/outputTemplate": "ui://widget/hello-world",
+          "openai/widgetAccessible": true,
+        }
+      );
     },
   },
 };
@@ -124,35 +122,8 @@ const handler = withMcpAuth(auth, async (req: Request, session: any) => {
           }
         );
 
-        // Register associated resource (widget HTML)
-        server.resource(
-          name,
-          resourceUri,
-          async () => {
-            logger.debug(`[MCP] Resource requested: ${name}`);
-            const html = await getWidgetHtml(tool.widgetPath);
-            return {
-              contents: [
-                {
-                  uri: resourceUri,
-                  mimeType: "text/html+skybridge",
-                  text: html,
-                  _meta: {
-                    "openai/widgetDescription": tool.description,
-                    "openai/widgetPrefersBorder": false,
-                    "openai/widgetDomain": "https://chatgpt.com",
-                    "openai/widgetCSP": {
-                      // Allow API calls to our server
-                      connect_domains: [baseURL],
-                      // Allow loading CSS/JS from our server
-                      resource_domains: [baseURL],
-                    },
-                  },
-                },
-              ],
-            };
-          }
-        );
+        // NOTE: Resource registration is handled by createSuccessResponse via createUIResource
+        // The Apps SDK adapter automatically creates the resource with proper MIME type and scripts
       }
     },
     {

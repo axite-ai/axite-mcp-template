@@ -1,6 +1,6 @@
 "use client";
 
-import { useToolInfo } from "@/src/skybridge";
+import { useToolInfo } from "@/src/mcp-ui-hooks";
 import type { HelloWorldContent } from "@/lib/types/tool-responses";
 
 export default function HelloWorldWidget() {
